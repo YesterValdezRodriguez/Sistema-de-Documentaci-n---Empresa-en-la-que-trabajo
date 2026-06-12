@@ -33,10 +33,15 @@
               <td>{{ d.nombre }}</td>
               <td>{{ d.jefe or '—' }}</td>
               <td>{% if d.activo %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDepto"
+              <td class="text-end text-nowrap">
+                <button class="btn btn-sm btn-outline-primary" title="Modificar" data-bs-toggle="modal" data-bs-target="#modalDepto"
                         onclick="prepararDepto({{ d.id }}, '{{ d.codigo }}', '{{ d.nombre | e }}', '{{ d.jefe | e if d.jefe else '' }}', {{ 'true' if d.activo else 'false' }})">
                   <i class="bi bi-pencil"></i></button>
+                <form method="post" action="{{ url_for('administracion.eliminar_departamento', id=d.id) }}"
+                      class="d-inline" data-confirmar="¿Eliminar el departamento {{ d.codigo }}? Esta acción no puede revertirse.">
+                  {{ csrf() }}
+                  <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
               </td>
             </tr>
             {% endfor %}
@@ -64,10 +69,15 @@
               <td>{{ t.nombre }}</td>
               <td class="small">{{ t.descripcion or '—' }}</td>
               <td>{% if t.activo %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipo"
+              <td class="text-end text-nowrap">
+                <button class="btn btn-sm btn-outline-primary" title="Modificar" data-bs-toggle="modal" data-bs-target="#modalTipo"
                         onclick="prepararTipo({{ t.id }}, '{{ t.prefijo }}', '{{ t.nombre | e }}', '{{ t.descripcion | e if t.descripcion else '' }}', {{ 'true' if t.activo else 'false' }})">
                   <i class="bi bi-pencil"></i></button>
+                <form method="post" action="{{ url_for('administracion.eliminar_tipo', id=t.id) }}"
+                      class="d-inline" data-confirmar="¿Eliminar el tipo de documento {{ t.prefijo }}? Esta acción no puede revertirse.">
+                  {{ csrf() }}
+                  <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
               </td>
             </tr>
             {% endfor %}
@@ -95,10 +105,15 @@
               <td>{{ c.departamento.codigo if c.departamento else '—' }}</td>
               <td class="small">{{ c.descripcion or '—' }}</td>
               <td>{% if c.activo %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCargo"
+              <td class="text-end text-nowrap">
+                <button class="btn btn-sm btn-outline-primary" title="Modificar" data-bs-toggle="modal" data-bs-target="#modalCargo"
                         onclick="prepararCargo({{ c.id }}, '{{ c.nombre | e }}', '{{ c.departamento_id or '' }}', '{{ c.descripcion | e if c.descripcion else '' }}', {{ 'true' if c.activo else 'false' }})">
                   <i class="bi bi-pencil"></i></button>
+                <form method="post" action="{{ url_for('administracion.eliminar_cargo', id=c.id) }}"
+                      class="d-inline" data-confirmar="¿Eliminar el cargo {{ c.nombre | e }}? Esta acción no puede revertirse.">
+                  {{ csrf() }}
+                  <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
               </td>
             </tr>
             {% endfor %}

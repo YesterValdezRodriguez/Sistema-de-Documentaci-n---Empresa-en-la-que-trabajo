@@ -186,6 +186,61 @@ def guardar_cargo():
     return redirect(url_for('administracion.catalogos'))
 
 
+@administracion_bp.route('/catalogos/departamentos/<int:id>/eliminar', methods=['POST'])
+@login_required
+@rol_requerido('admin')
+def eliminar_departamento(id):
+    from app.models.documento import Documento
+    from app.models.capa import CAPA
+    from app.models.capacitacion import PlanCapacitacion
+    depto = db.get_or_404(Departamento, id)
+    en_uso = (Usuario.query.filter_by(departamento_id=id).count()
+              + Documento.query.filter_by(departamento_id=id).count()
+              + CAPA.query.filter_by(departamento_id=id).count()
+              + PlanCapacitacion.query.filter_by(departamento_id=id).count()
+              + CargoPosicion.query.filter_by(departamento_id=id).count())
+    if en_uso:
+        flash(f'No se puede eliminar "{depto.codigo}": tiene {en_uso} registro(s) '
+              'asociado(s) (documentos, usuarios, CAPAs, etc.). '
+              'Puede desactivarlo en su lugar.', 'warning')
+    else:
+        db.session.delete(depto)
+        db.session.commit()
+        registrar_log('ELIMINACION', 'Administración', f'Departamento {depto.codigo} eliminado')
+        flash(f'Departamento {depto.codigo} eliminado.', 'success')
+    return redirect(url_for('administracion.catalogos'))
+
+
+@administracion_bp.route('/catalogos/tipos/<int:id>/eliminar', methods=['POST'])
+@login_required
+@rol_requerido('admin')
+def eliminar_tipo(id):
+    from app.models.documento import Documento
+    tipo = db.get_or_404(TipoDocumento, id)
+    en_uso = Documento.query.filter_by(tipo_doc_id=id).count()
+    if en_uso:
+        flash(f'No se puede eliminar "{tipo.prefijo}": hay {en_uso} documento(s) '
+              'de este tipo. Puede desactivarlo en su lugar.', 'warning')
+    else:
+        db.session.delete(tipo)
+        db.session.commit()
+        registrar_log('ELIMINACION', 'Administración', f'Tipo de documento {tipo.prefijo} eliminado')
+        flash(f'Tipo de documento {tipo.prefijo} eliminado.', 'success')
+    return redirect(url_for('administracion.catalogos'))
+
+
+@administracion_bp.route('/catalogos/cargos/<int:id>/eliminar', methods=['POST'])
+@login_required
+@rol_requerido('admin')
+def eliminar_cargo(id):
+    cargo = db.get_or_404(CargoPosicion, id)
+    db.session.delete(cargo)
+    db.session.commit()
+    registrar_log('ELIMINACION', 'Administración', f'Cargo {cargo.nombre} eliminado')
+    flash(f'Cargo "{cargo.nombre}" eliminado.', 'success')
+    return redirect(url_for('administracion.catalogos'))
+
+
 # -------------------------------------------------------------- Log sistema
 
 @administracion_bp.route('/log')
