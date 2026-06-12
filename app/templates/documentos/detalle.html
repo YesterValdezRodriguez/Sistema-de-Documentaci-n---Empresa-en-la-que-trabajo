@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block titulo %}{{ documento.codigo }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Documento {{ documento.codigo }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.lista') }}">Documentos</a></li>
+<li class="breadcrumb-item active">{{ documento.codigo }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">{{ documento.codigo }} — {{ documento.titulo }}</h4>
+    {{ badge(documento.estado, documento.estado_nombre) }}
+    <span class="badge text-bg-light border">Versión {{ documento.version_actual }}</span>
+    {% if documento.fecha_proxima_revision and documento.fecha_proxima_revision <= hoy %}
+    <span class="badge text-bg-danger">Revisión vencida</span>
+    {% endif %}
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('documentos.ficha_pdf', id=documento.id) }}" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-file-earmark-pdf"></i> Ficha PDF</a>
+    {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+    <a href="{{ url_for('documentos.editar', id=documento.id) }}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-pencil"></i> Editar</a>
+    <a href="{{ url_for('documentos.nueva_version', id=documento.id) }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-layers"></i> Nueva versión</a>
+    <a href="{{ url_for('documentos.nueva_copia', id=documento.id) }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-printer"></i> Registrar copia</a>
+    {% endif %}
+
+    {# Flujo de aprobación #}
+    {% if documento.estado == 'BORRADOR' and current_user.tiene_rol('admin', 'gestor_doc') %}
+    <form method="post" action="{{ url_for('documentos.enviar_revision', id=documento.id) }}">
+      {{ csrf() }}
+      <button class="btn btn-sm btn-info"><i class="bi bi-send"></i> Enviar a revisión</button>
+    </form>
+    {% endif %}
+    {% if documento.estado == 'EN_REVISION' and current_user.tiene_rol('admin', 'aprobador') %}
+    <form method="post" action="{{ url_for('documentos.aprobar', id=documento.id) }}">
+      {{ csrf() }}
+      <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Aprobar</button>
+    </form>
+    <form method="post" action="{{ url_for('documentos.rechazar', id=documento.id) }}"
+          data-confirmar="¿Devolver el documento a Borrador?">
+      {{ csrf() }}
+      <button class="btn btn-sm btn-outline-warning"><i class="bi bi-arrow-counterclockwise"></i> Devolver</button>
+    </form>
+    {% endif %}
+    {% if documento.estado == 'APROBADO' and current_user.tiene_rol('admin', 'aprobador', 'gestor_doc') %}
+    <form method="post" action="{{ url_for('documentos.publicar', id=documento.id) }}">
+      {{ csrf() }}
+      <button class="btn btn-sm btn-success"><i class="bi bi-patch-check"></i> Publicar (Vigente)</button>
+    </form>
+    {% endif %}
+    {% if documento.estado != 'OBSOLETO' and current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalBaja">
+      <i class="bi bi-trash"></i> Dar de baja</button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Datos generales</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Tipo</th><td>{{ documento.tipo_doc.nombre if documento.tipo_doc }}</td></tr>
+            <tr><th class="ps-3">Departamento</th><td>{{ documento.departamento.nombre if documento.departamento }}</td></tr>
+            <tr><th class="ps-3">Emisión</th><td>{{ documento.fecha_emision | fecha }}</td></tr>
+            <tr><th class="ps-3">Vigencia</th><td>{{ documento.fecha_vigencia | fecha }}</td></tr>
+            <tr><th class="ps-3">Próxima revisión</th><td>{{ documento.fecha_proxima_revision | fecha }}</td></tr>
+            <tr><th class="ps-3">Elaborado por</th><td>{{ documento.elaborado_por or '—' }}</td></tr>
+            <tr><th class="ps-3">Revisado por</th><td>{{ documento.revisado_por or '—' }}</td></tr>
+            <tr><th class="ps-3">Aprobado por</th><td>{{ documento.aprobado_por or '—' }}</td></tr>
+            <tr><th class="ps-3">Ubicación física</th><td>{{ documento.ubicacion_fisica or '—' }}</td></tr>
+            <tr><th class="ps-3">Copias controladas</th><td>{{ documento.numero_copias_controladas or 0 }}</td></tr>
+            {% if documento.estado == 'OBSOLETO' %}
+            <tr class="table-danger"><th class="ps-3">Baja</th>
+              <td>{{ documento.fecha_baja | fecha }} — {{ documento.motivo_baja }}</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Descripción y alcance</div>
+      <div class="card-body">
+        <p class="small mb-2"><strong>Descripción:</strong><br>{{ documento.descripcion or '—' }}</p>
+        <p class="small mb-2"><strong>Alcance:</strong><br>{{ documento.alcance or '—' }}</p>
+        <p class="small mb-0"><strong>Aplica a:</strong><br>{{ documento.aplica_a or '—' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-layers"></i> Historial de versiones</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead><tr><th>Versión</th><th>Emisión</th><th>Cambios</th><th>Creada por</th><th>Aprobación</th></tr></thead>
+          <tbody>
+            {% for v in documento.versiones %}
+            <tr>
+              <td class="fw-semibold">{{ v.numero_version }}</td>
+              <td>{{ v.fecha_emision | fecha }}</td>
+              <td class="small">{{ v.cambios_realizados | truncate(80) }}</td>
+              <td class="small">{{ v.creado_por.nombre_completo if v.creado_por else '—' }}</td>
+              <td class="small">{{ v.fecha_aprobacion | fecha }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Sin versiones registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-printer"></i> Copias controladas</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead><tr><th>#</th><th>Destinatario</th><th>Entrega</th><th>Firmado</th><th></th></tr></thead>
+          <tbody>
+            {% for c in documento.copias if c.activo %}
+            <tr>
+              <td>{{ c.numero_copia }}</td>
+              <td class="small">{{ c.destinatario }}<br>
+                <span class="text-muted">{{ c.departamento.codigo if c.departamento }}</span></td>
+              <td class="small">{{ c.fecha_entrega | fecha }}</td>
+              <td>
+                {% if c.firmado %}<span class="badge text-bg-success">Sí — {{ c.fecha_firma | fecha }}</span>
+                {% else %}<span class="badge text-bg-warning">Pendiente</span>{% endif %}
+              </td>
+              <td class="text-end">
+                {% if not c.firmado and current_user.tiene_rol('admin', 'gestor_doc') %}
+                <form method="post" action="{{ url_for('documentos.firmar_copia', id=c.id) }}" class="d-inline">
+                  {{ csrf() }}
+                  <button class="btn btn-sm btn-outline-success" title="Marcar firmada">
+                    <i class="bi bi-pen"></i></button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Sin copias registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal dar de baja -->
+<div class="modal fade" id="modalBaja" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('documentos.dar_baja', id=documento.id) }}" class="modal-content">
+      {{ csrf() }}
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Dar de baja {{ documento.codigo }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>El documento pasará a estado <strong>Obsoleto</strong>. Esta acción queda registrada.</p>
+        <label class="form-label">Motivo de la baja *</label>
+        <textarea name="motivo_baja" class="form-control" rows="3" required></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Confirmar baja</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

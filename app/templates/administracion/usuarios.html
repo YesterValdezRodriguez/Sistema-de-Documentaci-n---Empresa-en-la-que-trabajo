@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Usuarios{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Administración — Usuarios</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administración</li>
+<li class="breadcrumb-item active">Usuarios</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-people"></i> Usuarios del sistema</span>
+    <a href="{{ url_for('administracion.nuevo_usuario') }}" class="btn btn-sm btn-farach">
+      <i class="bi bi-person-plus"></i> Nuevo Usuario</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Usuario</th><th>Nombre</th><th>Cargo</th><th>Depto.</th><th>Rol</th>
+            <th>Último acceso</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr class="{{ 'table-secondary' if not u.activo }}">
+          <td class="fw-semibold">{{ u.username }}</td>
+          <td>{{ u.nombre_completo }}</td>
+          <td class="small">{{ u.cargo or '—' }}</td>
+          <td class="small">{{ u.departamento.codigo if u.departamento }}</td>
+          <td><span class="badge text-bg-{{ 'danger' if u.rol == 'admin' else 'primary' if u.rol == 'aprobador' else 'info' if u.rol == 'gestor_doc' else 'secondary' }}">{{ u.rol_nombre }}</span></td>
+          <td class="small">{{ u.ultimo_acceso | fecha_hora }}</td>
+          <td>{% if u.activo %}<span class="badge text-bg-success">Activo</span>
+              {% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}</td>
+          <td class="text-end text-nowrap">
+            <a href="{{ url_for('administracion.editar_usuario', id=u.id) }}"
+               class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
+            <button class="btn btn-sm btn-outline-warning" title="Resetear contraseña"
+                    data-bs-toggle="modal" data-bs-target="#modalReset{{ u.id }}">
+              <i class="bi bi-key"></i></button>
+            {% if u.id != current_user.id %}
+            <form method="post" action="{{ url_for('administracion.toggle_activo_usuario', id=u.id) }}"
+                  class="d-inline" data-confirmar="¿{{ 'Desactivar' if u.activo else 'Activar' }} al usuario {{ u.username }}?">
+              {{ csrf() }}
+              <button class="btn btn-sm btn-outline-{{ 'danger' if u.activo else 'success' }}"
+                      title="{{ 'Desactivar' if u.activo else 'Activar' }}">
+                <i class="bi bi-{{ 'person-x' if u.activo else 'person-check' }}"></i></button>
+            </form>
+            {% endif %}
+
+            <!-- Modal reset password -->
+            <div class="modal fade" id="modalReset{{ u.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <form method="post" action="{{ url_for('administracion.resetear_password', id=u.id) }}"
+                      class="modal-content text-start">
+                  {{ csrf() }}
+                  <div class="modal-header">
+                    <h6 class="modal-title">Resetear contraseña — {{ u.username }}</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <label class="form-label">Contraseña temporal *</label>
+                    <input type="text" name="password_nueva" class="form-control" minlength="6" required>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Resetear</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

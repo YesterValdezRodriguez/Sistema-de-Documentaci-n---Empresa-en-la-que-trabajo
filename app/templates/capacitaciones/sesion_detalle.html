@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block titulo %}Sesión — {{ sesion.titulo }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Sesión de Capacitación</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.planes') }}">Capacitaciones</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.sesiones') }}">Sesiones</a></li>
+<li class="breadcrumb-item active">{{ sesion.titulo | truncate(30) }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">{{ sesion.titulo }}</h4>
+    {{ badge(sesion.estado, sesion.estado_nombre) }}
+    <span class="badge text-bg-light border">{{ sesion.fecha_sesion | fecha }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('capacitaciones.asistencia_pdf', id=sesion.id) }}"
+       class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Lista de asistencia PDF</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">Datos de la sesión</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Plan</th><td>{{ sesion.plan.titulo if sesion.plan else '—' }}</td></tr>
+            <tr><th class="ps-3">Fecha</th><td>{{ sesion.fecha_sesion | fecha }}</td></tr>
+            <tr><th class="ps-3">Horario</th><td>{{ sesion.hora_inicio or '—' }} a {{ sesion.hora_fin or '—' }}</td></tr>
+            <tr><th class="ps-3">Facilitador</th><td>{{ sesion.facilitador or '—' }}</td></tr>
+            <tr><th class="ps-3">Lugar</th><td>{{ sesion.lugar or '—' }}</td></tr>
+            <tr><th class="ps-3">Objetivo</th><td>{{ sesion.objetivo or '—' }}</td></tr>
+            <tr><th class="ps-3">Contenido impartido</th><td>{{ sesion.contenido_impartido or '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if sesion.estado == 'PROGRAMADA' and current_user.tiene_rol('admin', 'gestor_doc') %}
+    <div class="card mb-3">
+      <div class="card-header">Marcar como realizada</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('capacitaciones.realizar_sesion', id=sesion.id) }}">
+          {{ csrf() }}
+          <div class="mb-2">
+            <label class="form-label small">Contenido impartido</label>
+            <textarea name="contenido_impartido" class="form-control form-control-sm" rows="3"></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Hora fin real</label>
+            <input type="time" name="hora_fin" class="form-control form-control-sm"
+                   value="{{ sesion.hora_fin or '' }}">
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Marcar realizada</button>
+          </div>
+        </form>
+        <form method="post" action="{{ url_for('capacitaciones.cancelar_sesion', id=sesion.id) }}"
+              data-confirmar="¿Cancelar esta sesión?" class="mt-2">
+          {{ csrf() }}
+          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i> Cancelar sesión</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-people"></i> Participantes ({{ sesion.asistencias | length }})</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr><th>Nombre</th><th>Cargo</th><th>Depto.</th><th>Calif.</th>
+                <th>Aprobado</th><th>Firmó</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for a in sesion.asistencias %}
+            <tr>
+              <td>{{ a.participante_nombre }}</td>
+              <td class="small">{{ a.participante_cargo or '—' }}</td>
+              <td class="small">{{ a.participante_departamento.codigo if a.participante_departamento }}</td>
+              <td>{{ a.calificacion if a.calificacion is not none else '—' }}</td>
+              <td>{% if a.calificacion is not none %}
+                  {% if a.aprobado %}<span class="badge text-bg-success">Sí</span>
+                  {% else %}<span class="badge text-bg-danger">No</span>{% endif %}
+                  {% else %}—{% endif %}</td>
+              <td>{% if a.firmo %}<i class="bi bi-check-circle text-success"></i>
+                  {% else %}<i class="bi bi-dash-circle text-muted"></i>{% endif %}</td>
+              <td class="text-end">
+                {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+                <form method="post" action="{{ url_for('capacitaciones.eliminar_asistente', id=a.id) }}"
+                      class="d-inline" data-confirmar="¿Eliminar a este participante?">
+                  {{ csrf() }}
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-3">Sin participantes registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+      <div class="card-footer">
+        <form method="post" action="{{ url_for('capacitaciones.agregar_asistente', id=sesion.id) }}"
+              class="row g-2 align-items-end">
+          {{ csrf() }}
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Nombre *</label>
+            <input type="text" name="participante_nombre" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small mb-1">Cargo</label>
+            <input type="text" name="participante_cargo" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small mb-1">Depto.</label>
+            <select name="participante_departamento_id" class="form-select form-select-sm">
+              <option value="">—</option>
+              {% for d in departamentos %}
+              <option value="{{ d.id }}">{{ d.codigo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small mb-1">Calif.</label>
+            <input type="number" name="calificacion" class="form-control form-control-sm" min="0" max="100">
+          </div>
+          <div class="col-md-1">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="firmo" id="chkFirmo">
+              <label class="form-check-label small" for="chkFirmo">Firmó</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-sm btn-farach w-100"><i class="bi bi-plus-lg"></i> Agregar</button>
+          </div>
+        </form>
+        <div class="form-text">Calificación mínima aprobatoria: 70.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}{{ 'Editar' if documento else 'Nuevo' }} Documento{% endblock %}
+{% block encabezado %}<h5 class="mb-0">{{ 'Editar Documento' if documento else 'Nuevo Documento' }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.lista') }}">Documentos</a></li>
+<li class="breadcrumb-item active">{{ 'Editar' if documento else 'Nuevo' }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-header">
+    {{ documento.codigo ~ ' — ' ~ documento.titulo if documento else 'Registro de nuevo documento (sistema FAFII)' }}
+  </div>
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      {{ csrf() }}
+      <div class="col-md-3">
+        <label class="form-label">Código FAFII *</label>
+        <input type="text" name="codigo" class="form-control" required
+               pattern="[A-Za-z]{2,4}-\d{3,4}" placeholder="POE-005"
+               value="{{ documento.codigo if documento else '' }}">
+        <div class="form-text">Formato TIPO-NNN, ej. POE-005</div>
+      </div>
+      <div class="col-md-9">
+        <label class="form-label">Título *</label>
+        <input type="text" name="titulo" class="form-control" required maxlength="255"
+               value="{{ documento.titulo if documento else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Tipo de documento *</label>
+        <select name="tipo_doc_id" class="form-select" required>
+          <option value="">Seleccione…</option>
+          {% for t in tipos %}
+          <option value="{{ t.id }}" {{ 'selected' if documento and documento.tipo_doc_id == t.id }}>{{ t.prefijo }} — {{ t.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Departamento *</label>
+        <select name="departamento_id" class="form-select" required>
+          <option value="">Seleccione…</option>
+          {% for d in departamentos %}
+          <option value="{{ d.id }}" {{ 'selected' if documento and documento.departamento_id == d.id }}>{{ d.codigo }} — {{ d.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if not documento %}
+      <div class="col-md-4">
+        <label class="form-label">Versión inicial</label>
+        <input type="text" name="version_actual" class="form-control" value="01" maxlength="10">
+      </div>
+      {% endif %}
+      <div class="col-md-4">
+        <label class="form-label">Fecha de emisión</label>
+        <input type="date" name="fecha_emision" class="form-control"
+               value="{{ documento.fecha_emision.isoformat() if documento and documento.fecha_emision else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Fecha de vigencia</label>
+        <input type="date" name="fecha_vigencia" class="form-control"
+               value="{{ documento.fecha_vigencia.isoformat() if documento and documento.fecha_vigencia else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Próxima revisión</label>
+        <input type="date" name="fecha_proxima_revision" class="form-control"
+               value="{{ documento.fecha_proxima_revision.isoformat() if documento and documento.fecha_proxima_revision else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Elaborado por</label>
+        <input type="text" name="elaborado_por" class="form-control"
+               value="{{ documento.elaborado_por if documento else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Revisado por</label>
+        <input type="text" name="revisado_por" class="form-control"
+               value="{{ documento.revisado_por if documento else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Aprobado por</label>
+        <input type="text" name="aprobado_por" class="form-control"
+               value="{{ documento.aprobado_por if documento else '' }}">
+      </div>
+      <div class="col-md-12">
+        <label class="form-label">Descripción</label>
+        <textarea name="descripcion" class="form-control" rows="2">{{ documento.descripcion if documento else '' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Alcance</label>
+        <textarea name="alcance" class="form-control" rows="2">{{ documento.alcance if documento else '' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Aplica a</label>
+        <textarea name="aplica_a" class="form-control" rows="2">{{ documento.aplica_a if documento else '' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Ubicación física</label>
+        <input type="text" name="ubicacion_fisica" class="form-control"
+               value="{{ documento.ubicacion_fisica if documento else '' }}">
+      </div>
+      {% if not documento %}
+      <div class="col-md-6">
+        <label class="form-label">Nombre de archivo (referencia)</label>
+        <input type="text" name="archivo_nombre" class="form-control" placeholder="POE-005_v01.docx">
+      </div>
+      {% endif %}
+      <div class="col-12">
+        <button type="submit" class="btn btn-farach">
+          <i class="bi bi-save"></i> {{ 'Guardar cambios' if documento else 'Crear documento' }}</button>
+        <a href="{{ url_for('documentos.detalle', id=documento.id) if documento else url_for('documentos.lista') }}"
+           class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

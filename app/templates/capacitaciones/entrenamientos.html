@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav %}
+{% block titulo %}Registros de Entrenamiento{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Registros de Entrenamiento (Disclosure)</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.planes') }}">Capacitaciones</a></li>
+<li class="breadcrumb-item active">Entrenamientos</li>
+{% endblock %}
+
+{% block contenido %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('capacitaciones.planes') }}">Planes</a></li>
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('capacitaciones.sesiones') }}">Sesiones</a></li>
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('capacitaciones.entrenamientos') }}">Registros de Entrenamiento</a></li>
+</ul>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small mb-1">Documento</label>
+        <select name="documento_id" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for d in documentos %}
+          <option value="{{ d.id }}" {{ 'selected' if request.args.get('documento_id') == d.id|string }}>{{ d.codigo }} — {{ d.titulo | truncate(40) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Departamento</label>
+        <select name="departamento" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for d in departamentos %}
+          <option value="{{ d.id }}" {{ 'selected' if request.args.get('departamento') == d.id|string }}>{{ d.codigo }} — {{ d.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-5 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('capacitaciones.entrenamientos') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+        {% if request.args.get('documento_id') %}
+        <a href="{{ url_for('capacitaciones.disclosure_pdf', documento_id=request.args.get('documento_id')) }}"
+           class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Disclosure PDF</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-journal-check"></i> Registros</span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('capacitaciones.exportar_entrenamientos') }}"
+         class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+      {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+      <a href="{{ url_for('capacitaciones.nuevo_entrenamiento') }}" class="btn btn-sm btn-farach">
+        <i class="bi bi-plus-lg"></i> Nuevo Registro</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Empleado</th><th>Cargo</th><th>Depto.</th><th>Documento</th>
+            <th>F. Entrenamiento</th><th>Entrenado por</th><th>Firmó</th></tr>
+      </thead>
+      <tbody>
+        {% for r in registros %}
+        <tr>
+          <td>{{ r.empleado_nombre }}</td>
+          <td class="small">{{ r.cargo }}</td>
+          <td class="small">{{ r.departamento.codigo if r.departamento }}</td>
+          <td class="small">{{ r.documento.codigo if r.documento }}</td>
+          <td>{{ r.fecha_entrenamiento | fecha }}</td>
+          <td class="small">{{ r.entrenado_por or '—' }}</td>
+          <td>{% if r.firmo_disclosure %}
+            <span class="badge text-bg-success">Sí — {{ r.fecha_firma | fecha }}</span>
+            {% else %}<span class="badge text-bg-warning">Pendiente</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No hay registros de entrenamiento.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'capacitaciones.entrenamientos') }}</div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}{{ 'Editar' if usuario else 'Nuevo' }} Usuario{% endblock %}
+{% block encabezado %}<h5 class="mb-0">{{ 'Editar Usuario' if usuario else 'Nuevo Usuario' }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administración</li>
+<li class="breadcrumb-item"><a href="{{ url_for('administracion.usuarios') }}">Usuarios</a></li>
+<li class="breadcrumb-item active">{{ usuario.username if usuario else 'Nuevo' }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">{{ 'Editar ' ~ usuario.username if usuario else 'Datos del nuevo usuario' }}</div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          {{ csrf() }}
+          <div class="col-md-6">
+            <label class="form-label">Usuario (login) *</label>
+            <input type="text" name="username" class="form-control" required
+                   value="{{ usuario.username if usuario else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control"
+                   value="{{ usuario.email or '' if usuario else '' }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nombre completo *</label>
+            <input type="text" name="nombre_completo" class="form-control" required
+                   value="{{ usuario.nombre_completo if usuario else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Cargo</label>
+            <input type="text" name="cargo" class="form-control"
+                   value="{{ usuario.cargo or '' if usuario else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Departamento</label>
+            <select name="departamento_id" class="form-select">
+              <option value="">Seleccione…</option>
+              {% for d in departamentos %}
+              <option value="{{ d.id }}" {{ 'selected' if usuario and usuario.departamento_id == d.id }}>{{ d.codigo }} — {{ d.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Rol *</label>
+            <select name="rol" class="form-select" required>
+              {% for r in roles %}
+              <option value="{{ r }}" {{ 'selected' if usuario and usuario.rol == r }}>{{ roles_nombres[r] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if not usuario %}
+          <div class="col-md-6">
+            <label class="form-label">Contraseña temporal *</label>
+            <input type="text" name="password" class="form-control" minlength="6" required>
+          </div>
+          {% endif %}
+          <div class="col-12">
+            <button type="submit" class="btn btn-farach"><i class="bi bi-save"></i> Guardar</button>
+            <a href="{{ url_for('administracion.usuarios') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

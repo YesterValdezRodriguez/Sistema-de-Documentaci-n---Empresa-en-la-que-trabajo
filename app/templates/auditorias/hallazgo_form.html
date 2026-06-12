@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Registrar Hallazgo{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Registrar Hallazgo — {{ auditoria.numero_auditoria }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('auditorias.lista') }}">Auditorías</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('auditorias.detalle', id=auditoria.id) }}">{{ auditoria.numero_auditoria }}</a></li>
+<li class="breadcrumb-item active">Nuevo hallazgo</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Nuevo hallazgo en {{ auditoria.numero_auditoria }} — {{ auditoria.titulo | truncate(50) }}</div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          {{ csrf() }}
+          <div class="col-md-6">
+            <label class="form-label">Tipo de hallazgo *</label>
+            <select name="tipo_hallazgo" class="form-select" required>
+              {% for t in tipos_hallazgo %}
+              <option value="{{ t }}">{{ t.replace('_', ' ').title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Responsable de respuesta</label>
+            <select name="responsable_respuesta_id" class="form-select">
+              <option value="">Seleccione…</option>
+              {% for u in usuarios %}
+              <option value="{{ u.id }}">{{ u.nombre_completo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripción *</label>
+            <textarea name="descripcion" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Requisito incumplido</label>
+            <textarea name="requisito_incumplido" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Evidencia objetiva</label>
+            <textarea name="evidencia_objetiva" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Fecha límite de respuesta</label>
+            <input type="date" name="fecha_limite_respuesta" class="form-control">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-farach"><i class="bi bi-save"></i> Registrar hallazgo</button>
+            <a href="{{ url_for('auditorias.detalle', id=auditoria.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

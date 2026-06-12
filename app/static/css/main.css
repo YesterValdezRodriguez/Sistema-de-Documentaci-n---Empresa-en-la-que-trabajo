@@ -1,0 +1,188 @@
+/* QMS FARACH - Estilos corporativos */
+:root {
+    --farach-azul: #1B3A6B;
+    --farach-azul-medio: #2E5DAC;
+    --farach-gris-fondo: #F4F6F9;
+    --farach-gris-texto: #495057;
+}
+
+body {
+    background-color: var(--farach-gris-fondo);
+    color: var(--farach-gris-texto);
+    min-height: 100vh;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, var(--farach-azul) 0%, #142C52 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1030;
+    overflow-y: auto;
+}
+
+.sidebar .brand {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.15rem;
+    padding: 1.1rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    display: block;
+    text-decoration: none;
+}
+
+.sidebar .brand small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.68rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.65rem 1rem;
+    border-left: 3px solid transparent;
+    font-size: 0.92rem;
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.sidebar .nav-link.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-left-color: #FD7E14;
+    color: #fff;
+    font-weight: 600;
+}
+
+.sidebar .nav-link .icono {
+    width: 1.5rem;
+    display: inline-block;
+    text-align: center;
+}
+
+.sidebar .submenu .nav-link {
+    padding-left: 2.6rem;
+    font-size: 0.85rem;
+}
+
+/* ---------- Contenido ---------- */
+.contenido-principal {
+    margin-left: 240px;
+    padding: 0;
+}
+
+.header-superior {
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.6rem 1.5rem;
+}
+
+.contenedor-pagina {
+    padding: 1.5rem;
+}
+
+/* ---------- Tarjetas KPI ---------- */
+.tarjeta-kpi {
+    border: none;
+    border-radius: 0.6rem;
+    box-shadow: 0 1px 4px rgba(27, 58, 107, 0.12);
+    border-left: 4px solid var(--farach-azul-medio);
+}
+
+.tarjeta-kpi.alerta { border-left-color: #FD7E14; }
+.tarjeta-kpi.peligro { border-left-color: #DC3545; }
+.tarjeta-kpi.exito { border-left-color: #28A745; }
+
+.tarjeta-kpi .valor {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--farach-azul);
+}
+
+.tarjeta-kpi .etiqueta {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+}
+
+/* ---------- Tablas y tarjetas ---------- */
+.card {
+    border: none;
+    border-radius: 0.6rem;
+    box-shadow: 0 1px 4px rgba(27, 58, 107, 0.10);
+}
+
+.card-header {
+    background: #fff;
+    border-bottom: 2px solid var(--farach-gris-fondo);
+    font-weight: 600;
+    color: var(--farach-azul);
+}
+
+.table thead th {
+    background-color: var(--farach-azul);
+    color: #fff;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(46, 93, 172, 0.06);
+}
+
+.btn-farach {
+    background-color: var(--farach-azul);
+    border-color: var(--farach-azul);
+    color: #fff;
+}
+
+.btn-farach:hover {
+    background-color: var(--farach-azul-medio);
+    border-color: var(--farach-azul-medio);
+    color: #fff;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+}
+
+/* ---------- Login ---------- */
+.pagina-login {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--farach-azul) 0%, var(--farach-azul-medio) 100%);
+}
+
+.caja-login {
+    width: 100%;
+    max-width: 410px;
+}
+
+/* ---------- Página de error ---------- */
+.pagina-error {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.pagina-error .codigo {
+    font-size: 6rem;
+    font-weight: 800;
+    color: var(--farach-azul);
+}

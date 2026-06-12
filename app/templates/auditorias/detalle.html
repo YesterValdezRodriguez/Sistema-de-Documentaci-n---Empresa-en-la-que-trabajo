@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block titulo %}{{ auditoria.numero_auditoria }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Auditoría {{ auditoria.numero_auditoria }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('auditorias.lista') }}">Auditorías</a></li>
+<li class="breadcrumb-item active">{{ auditoria.numero_auditoria }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">{{ auditoria.numero_auditoria }} — {{ auditoria.titulo }}</h4>
+    {{ badge(auditoria.estado, auditoria.estado_nombre) }}
+    <span class="badge text-bg-light border">{{ auditoria.tipo.title() }}</span>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('auditorias.informe_pdf', id=auditoria.id) }}"
+       class="btn btn-sm btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Informe PDF</a>
+    {% if current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+    <a href="{{ url_for('auditorias.editar', id=auditoria.id) }}"
+       class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>
+    <a href="{{ url_for('auditorias.nuevo_hallazgo', id=auditoria.id) }}"
+       class="btn btn-sm btn-farach"><i class="bi bi-plus-lg"></i> Registrar Hallazgo</a>
+
+    {% if auditoria.estado == 'PLANIFICADA' %}
+    <form method="post" action="{{ url_for('auditorias.cambiar_estado', id=auditoria.id) }}">
+      {{ csrf() }}
+      <input type="hidden" name="estado" value="EN_CURSO">
+      <button class="btn btn-sm btn-info"><i class="bi bi-play"></i> Iniciar</button>
+    </form>
+    {% elif auditoria.estado == 'EN_CURSO' %}
+    <form method="post" action="{{ url_for('auditorias.cambiar_estado', id=auditoria.id) }}">
+      {{ csrf() }}
+      <input type="hidden" name="estado" value="INFORME_PENDIENTE">
+      <button class="btn btn-sm btn-warning"><i class="bi bi-file-text"></i> Pasar a informe</button>
+    </form>
+    {% elif auditoria.estado == 'INFORME_PENDIENTE' %}
+    <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#modalCierre">
+      <i class="bi bi-lock"></i> Cerrar auditoría</button>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Datos de la auditoría</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Alcance</th><td>{{ auditoria.alcance or '—' }}</td></tr>
+            <tr><th class="ps-3">Objetivo</th><td>{{ auditoria.objetivo or '—' }}</td></tr>
+            <tr><th class="ps-3">Fechas</th>
+              <td>{{ auditoria.fecha_inicio | fecha }} → {{ auditoria.fecha_fin_planificada | fecha }}</td></tr>
+            <tr><th class="ps-3">Auditor líder</th><td>{{ auditoria.auditor_lider or '—' }}</td></tr>
+            <tr><th class="ps-3">Equipo auditor</th><td>{{ auditoria.equipo_auditor or '—' }}</td></tr>
+            <tr><th class="ps-3">Deptos. auditados</th><td>{{ auditoria.departamentos_auditados or '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Informe</div>
+      <div class="card-body">
+        <p class="small mb-1"><strong>Fecha de informe:</strong> {{ auditoria.fecha_informe | fecha }}</p>
+        <p class="small mb-0"><strong>Resumen ejecutivo:</strong><br>{{ auditoria.resumen_ejecutivo or '—' }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-flag"></i> Hallazgos ({{ auditoria.hallazgos | length }})</div>
+  <div class="card-body">
+    {% for h in auditoria.hallazgos %}
+    <div class="border rounded p-3 mb-3">
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <div>
+          <span class="badge text-bg-{{ 'danger' if h.tipo_hallazgo == 'NO_CONFORMIDAD_MAYOR' else 'warning' if h.tipo_hallazgo == 'NO_CONFORMIDAD_MENOR' else 'info' }}">{{ h.tipo_nombre }}</span>
+          {{ badge(h.estado) }}
+          {% if h.capa_generada %}
+          <a href="{{ url_for('capas.detalle', id=h.capa_generada_id) }}" class="badge text-bg-primary text-decoration-none">
+            CAPA: {{ h.capa_generada.numero_capa }}</a>
+          {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+          {% if not h.capa_generada and current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+          <form method="post" action="{{ url_for('auditorias.generar_capa', id=h.id) }}"
+                data-confirmar="¿Generar una CAPA vinculada a este hallazgo?">
+            {{ csrf() }}
+            <button class="btn btn-sm btn-outline-primary"><i class="bi bi-gear"></i> Generar CAPA</button>
+          </form>
+          {% endif %}
+          {% if h.estado != 'CERRADO' and current_user.tiene_rol('admin', 'aprobador') %}
+          <form method="post" action="{{ url_for('auditorias.cerrar_hallazgo', id=h.id) }}"
+                data-confirmar="¿Cerrar este hallazgo?">
+            {{ csrf() }}
+            <button class="btn btn-sm btn-outline-dark"><i class="bi bi-lock"></i> Cerrar</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      <p class="mb-1 mt-2 small"><strong>Descripción:</strong> {{ h.descripcion }}</p>
+      <p class="mb-1 small"><strong>Requisito incumplido:</strong> {{ h.requisito_incumplido or '—' }}</p>
+      <p class="mb-1 small"><strong>Evidencia objetiva:</strong> {{ h.evidencia_objetiva or '—' }}</p>
+      <p class="mb-1 small">
+        <strong>Responsable de respuesta:</strong>
+        {{ h.responsable_respuesta.nombre_completo if h.responsable_respuesta else '—' }}
+        — <strong>Fecha límite:</strong> {{ h.fecha_limite_respuesta | fecha }}
+      </p>
+      {% if h.respuesta %}
+      <div class="alert alert-light border small mb-1">
+        <strong>Respuesta ({{ h.fecha_respuesta | fecha }}):</strong> {{ h.respuesta }}
+      </div>
+      {% elif h.estado != 'CERRADO' and current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+      <form method="post" action="{{ url_for('auditorias.responder_hallazgo', id=h.id) }}" class="mt-2">
+        {{ csrf() }}
+        <div class="input-group input-group-sm">
+          <input type="text" name="respuesta" class="form-control" placeholder="Registrar respuesta al hallazgo…" required>
+          <button class="btn btn-farach"><i class="bi bi-send"></i> Responder</button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-3 mb-0">Sin hallazgos registrados.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Modal cierre de auditoría -->
+<div class="modal fade" id="modalCierre" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('auditorias.cambiar_estado', id=auditoria.id) }}" class="modal-content">
+      {{ csrf() }}
+      <input type="hidden" name="estado" value="CERRADA">
+      <div class="modal-header">
+        <h5 class="modal-title">Cerrar auditoría {{ auditoria.numero_auditoria }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">Resumen ejecutivo</label>
+        <textarea name="resumen_ejecutivo" class="form-control" rows="4">{{ auditoria.resumen_ejecutivo or '' }}</textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-dark">Cerrar auditoría</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

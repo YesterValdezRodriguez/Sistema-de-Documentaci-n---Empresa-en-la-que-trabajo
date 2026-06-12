@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Nueva Solicitud de Cambio{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Nueva Solicitud de Cambio</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('cambios.lista') }}">Control de Cambios</a></li>
+<li class="breadcrumb-item active">Nueva</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-header">Solicitud de cambio (numeración automática SC-AAAA-NNN)</div>
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      {{ csrf() }}
+      <div class="col-md-8">
+        <label class="form-label">Título *</label>
+        <input type="text" name="titulo" class="form-control" required maxlength="255">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Tipo de cambio *</label>
+        <select name="tipo_cambio" class="form-select" required>
+          {% for t in tipos %}
+          <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Documento afectado (opcional)</label>
+        <select name="documento_afectado_id" class="form-select">
+          <option value="">Ninguno</option>
+          {% for d in documentos %}
+          <option value="{{ d.id }}">{{ d.codigo }} — {{ d.titulo | truncate(50) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Área afectada</label>
+        <input type="text" name="area_afectada" class="form-control">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Descripción del cambio *</label>
+        <textarea name="descripcion_cambio" class="form-control" rows="3" required></textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Justificación</label>
+        <textarea name="justificacion" class="form-control" rows="3"></textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Impacto estimado</label>
+        <textarea name="impacto_estimado" class="form-control" rows="3"></textarea>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-farach"><i class="bi bi-save"></i> Crear solicitud</button>
+        <a href="{{ url_for('cambios.lista') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Iniciar Sesión{% endblock %}
+
+{% block contenido_publico %}
+<div class="pagina-login">
+  <div class="caja-login">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <h2 class="fw-bold mb-0" style="color:#1B3A6B;">QMS FARACH</h2>
+          <p class="text-muted small mb-0">Sistema de Gestión de Calidad Documental</p>
+          <p class="text-muted small">Laboratorios Alfa II (FARACH, S.A.)</p>
+        </div>
+
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+          {% for categoria, mensaje in mensajes %}
+          <div class="alert alert-{{ categoria }} py-2 small">{{ mensaje }}</div>
+          {% endfor %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+          {{ csrf() }}
+          <div class="mb-3">
+            <label class="form-label">Usuario</label>
+            <input type="text" name="username" class="form-control" required autofocus>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Contraseña</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-farach w-100">
+            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="text-center text-white-50 small mt-3 mb-0">© Laboratorios Alfa II — Uso interno</p>
+  </div>
+</div>
+{% endblock %}

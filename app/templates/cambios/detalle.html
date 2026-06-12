@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block titulo %}{{ sc.numero_sc }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Solicitud {{ sc.numero_sc }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('cambios.lista') }}">Control de Cambios</a></li>
+<li class="breadcrumb-item active">{{ sc.numero_sc }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">{{ sc.numero_sc }} — {{ sc.titulo }}</h4>
+    {{ badge(sc.estado, sc.estado_nombre) }}
+    <span class="badge text-bg-light border">{{ sc.tipo_cambio }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('cambios.reporte_pdf', id=sc.id) }}" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-file-earmark-pdf"></i> PDF</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header">Detalle de la solicitud</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Solicitado por</th>
+              <td>{{ sc.solicitado_por.nombre_completo if sc.solicitado_por }} — {{ sc.fecha_solicitud | fecha }}</td></tr>
+            <tr><th class="ps-3">Área afectada</th><td>{{ sc.area_afectada or '—' }}</td></tr>
+            <tr><th class="ps-3">Documento</th>
+              <td>{% if sc.documento_afectado %}
+                <a href="{{ url_for('documentos.detalle', id=sc.documento_afectado_id) }}">{{ sc.documento_afectado.codigo }}</a>
+                {% else %}—{% endif %}</td></tr>
+            <tr><th class="ps-3">Descripción</th><td>{{ sc.descripcion_cambio }}</td></tr>
+            <tr><th class="ps-3">Justificación</th><td>{{ sc.justificacion or '—' }}</td></tr>
+            <tr><th class="ps-3">Impacto estimado</th><td>{{ sc.impacto_estimado or '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">Evaluación / Implementación / Cierre</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Evaluación</th>
+              <td>{% if sc.fecha_evaluacion %}
+                {{ sc.evaluado_por.nombre_completo if sc.evaluado_por }} — {{ sc.fecha_evaluacion | fecha }}
+                — <strong>{{ sc.decision }}</strong><br>
+                <span class="small text-muted">{{ sc.comentario_evaluacion or '' }}</span>
+                {% else %}Pendiente{% endif %}</td></tr>
+            <tr><th class="ps-3">Implementación</th>
+              <td>{% if sc.fecha_implementacion %}
+                {{ sc.implementado_por.nombre_completo if sc.implementado_por }} — {{ sc.fecha_implementacion | fecha }}<br>
+                <span class="small text-muted">{{ sc.evidencia_implementacion or '' }}</span>
+                {% else %}Pendiente{% endif %}</td></tr>
+            <tr><th class="ps-3">Cierre</th>
+              <td>{% if sc.fecha_cierre %}
+                {{ sc.cerrado_por.nombre_completo if sc.cerrado_por }} — {{ sc.fecha_cierre | fecha }}
+                {% else %}Pendiente{% endif %}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Historial de comentarios -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-chat-dots"></i> Historial de comentarios</div>
+      <div class="card-body">
+        {% if current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+        <form method="post" action="{{ url_for('cambios.comentar', id=sc.id) }}" class="mb-3">
+          {{ csrf() }}
+          <div class="input-group">
+            <input type="text" name="comentario" class="form-control" placeholder="Agregar comentario…" required>
+            <button class="btn btn-farach"><i class="bi bi-send"></i></button>
+          </div>
+        </form>
+        {% endif %}
+        <ul class="list-group list-group-flush">
+          {% for com in sc.comentarios %}
+          <li class="list-group-item small px-0">
+            <strong>{{ com.usuario.nombre_completo if com.usuario else 'Sistema' }}</strong>
+            <span class="text-muted">— {{ com.fecha_hora | fecha_hora }}</span><br>
+            {{ com.comentario }}
+          </li>
+          {% else %}
+          <li class="list-group-item text-muted small px-0">Sin comentarios.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if sc.estado in ('ABIERTA', 'EN_EVALUACION') and current_user.tiene_rol('admin', 'aprobador') %}
+    <div class="card mb-3">
+      <div class="card-header">Evaluar solicitud</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('cambios.evaluar', id=sc.id) }}">
+          {{ csrf() }}
+          <div class="mb-3">
+            <label class="form-label">Comentario de evaluación</label>
+            <textarea name="comentario_evaluacion" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button name="decision" value="APROBAR" class="btn btn-success btn-sm">
+              <i class="bi bi-check-lg"></i> Aprobar</button>
+            <button name="decision" value="RECHAZAR" class="btn btn-danger btn-sm">
+              <i class="bi bi-x-lg"></i> Rechazar</button>
+            <button name="decision" value="EN_EVALUACION" class="btn btn-outline-secondary btn-sm">
+              Marcar en evaluación</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if sc.estado == 'APROBADA' and current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+    <div class="card mb-3">
+      <div class="card-header">Registrar implementación</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('cambios.implementar', id=sc.id) }}">
+          {{ csrf() }}
+          <div class="mb-3">
+            <label class="form-label">Fecha de implementación</label>
+            <input type="date" name="fecha_implementacion" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Evidencia de implementación *</label>
+            <textarea name="evidencia_implementacion" class="form-control" rows="3" required></textarea>
+          </div>
+          <button class="btn btn-farach btn-sm"><i class="bi bi-check2-square"></i> Marcar implementada</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if sc.estado in ('IMPLEMENTADA', 'RECHAZADA') and current_user.tiene_rol('admin', 'aprobador') %}
+    <div class="card mb-3">
+      <div class="card-header">Cierre formal</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('cambios.cerrar', id=sc.id) }}"
+              data-confirmar="¿Cerrar formalmente la solicitud {{ sc.numero_sc }}?">
+          {{ csrf() }}
+          <p class="small text-muted">El cierre formal registra fecha y usuario. No puede revertirse.</p>
+          <button class="btn btn-dark btn-sm"><i class="bi bi-lock"></i> Cerrar solicitud</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

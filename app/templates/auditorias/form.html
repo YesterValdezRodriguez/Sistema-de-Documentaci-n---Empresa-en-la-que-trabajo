@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}{{ 'Editar' if auditoria else 'Planificar' }} Auditoría{% endblock %}
+{% block encabezado %}<h5 class="mb-0">{{ 'Editar ' ~ auditoria.numero_auditoria if auditoria else 'Planificar Auditoría' }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('auditorias.lista') }}">Auditorías</a></li>
+<li class="breadcrumb-item active">{{ auditoria.numero_auditoria if auditoria else 'Nueva' }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-header">{{ 'Editar auditoría' if auditoria else 'Nueva auditoría (numeración automática AUD-AAAA-NNN)' }}</div>
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      {{ csrf() }}
+      <div class="col-md-8">
+        <label class="form-label">Título *</label>
+        <input type="text" name="titulo" class="form-control" required
+               value="{{ auditoria.titulo if auditoria else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Tipo *</label>
+        <select name="tipo" class="form-select" required>
+          {% for t in tipos %}
+          <option value="{{ t }}" {{ 'selected' if auditoria and auditoria.tipo == t }}>{{ t.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Alcance</label>
+        <textarea name="alcance" class="form-control" rows="2">{{ auditoria.alcance if auditoria else '' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Objetivo</label>
+        <textarea name="objetivo" class="form-control" rows="2">{{ auditoria.objetivo if auditoria else '' }}</textarea>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fecha de inicio</label>
+        <input type="date" name="fecha_inicio" class="form-control"
+               value="{{ auditoria.fecha_inicio.isoformat() if auditoria and auditoria.fecha_inicio else '' }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Fecha fin planificada</label>
+        <input type="date" name="fecha_fin_planificada" class="form-control"
+               value="{{ auditoria.fecha_fin_planificada.isoformat() if auditoria and auditoria.fecha_fin_planificada else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Auditor líder</label>
+        <input type="text" name="auditor_lider" class="form-control"
+               value="{{ auditoria.auditor_lider if auditoria else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Equipo auditor</label>
+        <textarea name="equipo_auditor" class="form-control" rows="2">{{ auditoria.equipo_auditor if auditoria else '' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Departamentos auditados</label>
+        <textarea name="departamentos_auditados" class="form-control" rows="2">{{ auditoria.departamentos_auditados if auditoria else '' }}</textarea>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-farach">
+          <i class="bi bi-save"></i> {{ 'Guardar cambios' if auditoria else 'Planificar' }}</button>
+        <a href="{{ url_for('auditorias.detalle', id=auditoria.id) if auditoria else url_for('auditorias.lista') }}"
+           class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

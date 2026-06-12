@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav, badge %}
+{% block titulo %}CAPA{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Acciones Correctivas y Preventivas (CAPA)</h5>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">CAPA</li>{% endblock %}
+
+{% block contenido %}
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi alerta"><div class="card-body py-3">
+      <div class="etiqueta">CAPAs abiertas</div><div class="valor">{{ resumen.abiertas }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi peligro"><div class="card-body py-3">
+      <div class="etiqueta">Vencidas</div><div class="valor text-danger">{{ resumen.vencidas }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi exito"><div class="card-body py-3">
+      <div class="etiqueta">Cerradas</div><div class="valor">{{ resumen.cerradas }}</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Buscar</label>
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="Número o título…" value="{{ request.args.get('q', '') }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for e in estados %}
+          <option value="{{ e }}" {{ 'selected' if request.args.get('estado') == e }}>{{ e.replace('_', ' ').title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for t in tipos %}
+          <option value="{{ t }}" {{ 'selected' if request.args.get('tipo') == t }}>{{ t.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Departamento</label>
+        <select name="departamento" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for d in departamentos %}
+          <option value="{{ d.id }}" {{ 'selected' if request.args.get('departamento') == d.id|string }}>{{ d.codigo }} — {{ d.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('capas.lista') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-gear"></i> CAPAs</span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('capas.exportar_excel', **request.args.to_dict()) }}"
+         class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+      <a href="{{ url_for('capas.nueva') }}" class="btn btn-sm btn-farach">
+        <i class="bi bi-plus-lg"></i> Nueva CAPA</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Número</th><th>Título</th><th>Tipo</th><th>Prioridad</th><th>Depto.</th>
+            <th>Responsable</th><th>F. Límite</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for capa in capas %}
+        <tr class="{{ 'table-danger' if capa.esta_vencida }}">
+          <td class="fw-semibold">{{ capa.numero_capa }}</td>
+          <td>{{ capa.titulo | truncate(45) }}</td>
+          <td class="small">{{ capa.tipo.title() }}</td>
+          <td>{{ badge(capa.prioridad) }}</td>
+          <td class="small">{{ capa.departamento.codigo if capa.departamento }}</td>
+          <td class="small">{{ capa.responsable.nombre_completo if capa.responsable else '—' }}</td>
+          <td>{{ capa.fecha_limite_implementacion | fecha }}</td>
+          <td>{{ badge('VENCIDA', 'Vencida') if capa.esta_vencida else badge(capa.estado, capa.estado_nombre) }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('capas.detalle', id=capa.id) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">No hay CAPAs registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'capas.lista') }}</div>
+</div>
+{% endblock %}

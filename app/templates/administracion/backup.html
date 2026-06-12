@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Backup{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Administración — Backup de la Base de Datos</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administración</li>
+<li class="breadcrumb-item active">Backup</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-database-down"></i> Descargar copia de seguridad</div>
+      <div class="card-body">
+        <p class="small text-muted">
+          Descarga una copia completa del archivo <code>qms_farach.db</code>.
+          Guarde el archivo en una ubicación segura. Cada descarga queda registrada.
+        </p>
+        <form method="post" action="{{ url_for('administracion.descargar_backup') }}">
+          {{ csrf() }}
+          <button class="btn btn-farach"><i class="bi bi-download"></i> Descargar backup</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Backups realizados</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead><tr><th>Fecha/Hora</th><th>Archivo</th><th>Usuario</th><th>Tamaño</th></tr></thead>
+          <tbody>
+            {% for r in registros %}
+            <tr>
+              <td>{{ r.fecha_hora | fecha_hora }}</td>
+              <td class="small">{{ r.nombre_archivo }}</td>
+              <td>{{ r.usuario.username if r.usuario else '—' }}</td>
+              <td class="small">{{ '%.1f KB' | format(r.tamano_bytes / 1024) if r.tamano_bytes else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No se han realizado backups.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

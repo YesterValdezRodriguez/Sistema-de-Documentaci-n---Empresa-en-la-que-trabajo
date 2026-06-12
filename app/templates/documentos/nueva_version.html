@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Nueva versión — {{ documento.codigo }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Nueva versión de {{ documento.codigo }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.lista') }}">Documentos</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.detalle', id=documento.id) }}">{{ documento.codigo }}</a></li>
+<li class="breadcrumb-item active">Nueva versión</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        Registrar nueva versión — versión actual: <strong>{{ documento.version_actual }}</strong>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info small">
+          Al registrar la nueva versión, el documento pasará a estado <strong>En Revisión</strong>
+          y deberá ser aprobado nuevamente. La versión anterior queda en el historial.
+        </div>
+        <form method="post" class="row g-3">
+          {{ csrf() }}
+          <div class="col-md-4">
+            <label class="form-label">Número de versión</label>
+            <input type="text" name="numero_version" class="form-control"
+                   value="{{ version_sugerida }}" maxlength="10">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Fecha de emisión</label>
+            <input type="date" name="fecha_emision" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Archivo (referencia)</label>
+            <input type="text" name="archivo_nombre" class="form-control"
+                   placeholder="{{ documento.codigo }}_v{{ version_sugerida }}.docx">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripción de los cambios realizados *</label>
+            <textarea name="cambios_realizados" class="form-control" rows="4" required></textarea>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-farach"><i class="bi bi-layers"></i> Registrar versión</button>
+            <a href="{{ url_for('documentos.detalle', id=documento.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

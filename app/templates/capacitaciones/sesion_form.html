@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Programar Sesión{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Programar Sesión de Capacitación</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.planes') }}">Capacitaciones</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.sesiones') }}">Sesiones</a></li>
+<li class="breadcrumb-item active">Nueva</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">Datos de la sesión</div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          {{ csrf() }}
+          <div class="col-md-8">
+            <label class="form-label">Título / Tema *</label>
+            <input type="text" name="titulo" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Plan asociado (opcional)</label>
+            <select name="plan_id" class="form-select">
+              <option value="">Ninguno</option>
+              {% for p in planes %}
+              <option value="{{ p.id }}">{{ p.titulo | truncate(50) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Fecha *</label>
+            <input type="date" name="fecha_sesion" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Hora inicio</label>
+            <input type="time" name="hora_inicio" class="form-control">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Hora fin</label>
+            <input type="time" name="hora_fin" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Facilitador</label>
+            <input type="text" name="facilitador" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Lugar</label>
+            <input type="text" name="lugar" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Objetivo</label>
+            <textarea name="objetivo" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-farach"><i class="bi bi-calendar-plus"></i> Programar</button>
+            <a href="{{ url_for('capacitaciones.sesiones') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

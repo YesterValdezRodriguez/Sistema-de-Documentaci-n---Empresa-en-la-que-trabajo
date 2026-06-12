@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav %}
+{% block titulo %}Capacitaciones{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Planes de Capacitación</h5>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Capacitaciones</li>{% endblock %}
+
+{% block contenido %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('capacitaciones.planes') }}">Planes</a></li>
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('capacitaciones.sesiones') }}">Sesiones</a></li>
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('capacitaciones.entrenamientos') }}">Registros de Entrenamiento</a></li>
+</ul>
+
+{% if alertas %}
+<div class="alert alert-warning">
+  <strong><i class="bi bi-exclamation-triangle"></i> Capacitaciones vencidas o por vencer:</strong>
+  <ul class="mb-0 small">
+    {% for plan, ultima, vencimiento in alertas %}
+    <li>
+      <strong>{{ plan.titulo }}</strong> —
+      {% if ultima %}
+        última sesión {{ ultima | fecha }}, vence {{ vencimiento | fecha }}
+        {% if vencimiento < hoy %}<span class="badge text-bg-danger">Vencida</span>{% endif %}
+      {% else %}
+        nunca impartida
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Departamento</label>
+        <select name="departamento" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for d in departamentos %}
+          <option value="{{ d.id }}" {{ 'selected' if request.args.get('departamento') == d.id|string }}>{{ d.codigo }} — {{ d.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for t in tipos %}
+          <option value="{{ t }}" {{ 'selected' if request.args.get('tipo') == t }}>{{ t.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('capacitaciones.planes') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-mortarboard"></i> Planes de capacitación</span>
+    {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+    <a href="{{ url_for('capacitaciones.nuevo_plan') }}" class="btn btn-sm btn-farach">
+      <i class="bi bi-plus-lg"></i> Nuevo Plan</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Título</th><th>Tipo</th><th>Depto.</th><th>Cargo aplica</th>
+            <th>Documento</th><th>Frecuencia</th><th>Activo</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for plan in planes %}
+        <tr>
+          <td>{{ plan.titulo }}</td>
+          <td>{{ plan.tipo_nombre }}</td>
+          <td>{{ plan.departamento.codigo if plan.departamento }}</td>
+          <td class="small">{{ plan.cargo_aplica or '—' }}</td>
+          <td class="small">{{ plan.documento.codigo if plan.documento else '—' }}</td>
+          <td>{{ 'Única vez' if not plan.frecuencia_meses else 'Cada ' ~ plan.frecuencia_meses ~ ' meses' }}</td>
+          <td>{% if plan.activo %}<span class="badge text-bg-success">Sí</span>
+              {% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
+          <td class="text-end">
+            {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+            <a href="{{ url_for('capacitaciones.editar_plan', id=plan.id) }}"
+               class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No hay planes registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'capacitaciones.planes') }}</div>
+</div>
+{% endblock %}

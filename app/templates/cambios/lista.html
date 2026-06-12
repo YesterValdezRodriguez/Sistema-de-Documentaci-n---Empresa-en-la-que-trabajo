@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav, badge %}
+{% block titulo %}Control de Cambios{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Control de Cambios</h5>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Control de Cambios</li>{% endblock %}
+
+{% block contenido %}
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi alerta"><div class="card-body py-3">
+      <div class="etiqueta">SC Abiertas</div><div class="valor">{{ resumen.abiertas }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi"><div class="card-body py-3">
+      <div class="etiqueta">En evaluación</div><div class="valor">{{ resumen.en_evaluacion }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi exito"><div class="card-body py-3">
+      <div class="etiqueta">Por cerrar</div><div class="valor">{{ resumen.por_cerrar }}</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for e in estados %}
+          <option value="{{ e }}" {{ 'selected' if request.args.get('estado') == e }}>{{ e.replace('_', ' ').title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for t in tipos %}
+          <option value="{{ t }}" {{ 'selected' if request.args.get('tipo') == t }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Área</label>
+        <input type="text" name="area" class="form-control form-control-sm"
+               value="{{ request.args.get('area', '') }}">
+      </div>
+      <div class="col-md-3 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('cambios.lista') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-arrow-repeat"></i> Solicitudes de cambio</span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('cambios.exportar_excel', **request.args.to_dict()) }}"
+         class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+      {% if current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+      <a href="{{ url_for('cambios.nueva') }}" class="btn btn-sm btn-farach">
+        <i class="bi bi-plus-lg"></i> Nueva Solicitud</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Número</th><th>Título</th><th>Tipo</th><th>Área</th><th>Documento</th>
+            <th>Estado</th><th>Solicitada</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for sc in solicitudes %}
+        <tr>
+          <td class="fw-semibold">{{ sc.numero_sc }}</td>
+          <td>{{ sc.titulo | truncate(50) }}</td>
+          <td class="small">{{ sc.tipo_cambio }}</td>
+          <td class="small">{{ sc.area_afectada or '—' }}</td>
+          <td class="small">{{ sc.documento_afectado.codigo if sc.documento_afectado else '—' }}</td>
+          <td>{{ badge(sc.estado, sc.estado_nombre) }}</td>
+          <td>{{ sc.fecha_solicitud | fecha }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('cambios.detalle', id=sc.id) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No hay solicitudes de cambio.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'cambios.lista') }}</div>
+</div>
+{% endblock %}

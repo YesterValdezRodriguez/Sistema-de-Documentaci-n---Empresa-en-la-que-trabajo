@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}{{ 'Editar' if capa else 'Nueva' }} CAPA{% endblock %}
+{% block encabezado %}<h5 class="mb-0">{{ 'Editar ' ~ capa.numero_capa if capa else 'Nueva CAPA' }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capas.lista') }}">CAPA</a></li>
+<li class="breadcrumb-item active">{{ capa.numero_capa if capa else 'Nueva' }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card">
+  <div class="card-header">{{ 'Editar CAPA' if capa else 'Apertura de CAPA (numeración automática CAPA-AAAA-NNN)' }}</div>
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      {{ csrf() }}
+      <div class="col-md-8">
+        <label class="form-label">Título *</label>
+        <input type="text" name="titulo" class="form-control" required maxlength="255"
+               value="{{ capa.titulo if capa else '' }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Tipo *</label>
+        <select name="tipo" class="form-select" required>
+          {% for t in tipos %}
+          <option value="{{ t }}" {{ 'selected' if capa and capa.tipo == t }}>{{ t.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Origen *</label>
+        <select name="origen" class="form-select" required>
+          {% for o in origenes %}
+          <option value="{{ o }}" {{ 'selected' if capa and capa.origen == o }}>{{ o.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Descripción del hallazgo</label>
+        <textarea name="descripcion_hallazgo" class="form-control" rows="3">{{ capa.descripcion_hallazgo if capa else '' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Descripción del problema</label>
+        <textarea name="descripcion_problema" class="form-control" rows="3">{{ capa.descripcion_problema if capa else '' }}</textarea>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Área afectada</label>
+        <input type="text" name="area_afectada" class="form-control"
+               value="{{ capa.area_afectada if capa else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Departamento</label>
+        <select name="departamento_id" class="form-select">
+          <option value="">Seleccione…</option>
+          {% for d in departamentos %}
+          <option value="{{ d.id }}" {{ 'selected' if capa and capa.departamento_id == d.id }}>{{ d.codigo }} — {{ d.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Responsable</label>
+        <select name="responsable_id" class="form-select">
+          <option value="">Seleccione…</option>
+          {% for u in usuarios %}
+          <option value="{{ u.id }}" {{ 'selected' if capa and capa.responsable_id == u.id }}>{{ u.nombre_completo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Fecha límite de implementación</label>
+        <input type="date" name="fecha_limite_implementacion" class="form-control"
+               value="{{ capa.fecha_limite_implementacion.isoformat() if capa and capa.fecha_limite_implementacion else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Prioridad *</label>
+        <select name="prioridad" class="form-select" required>
+          {% for p in prioridades %}
+          <option value="{{ p }}" {{ 'selected' if capa and capa.prioridad == p }}>{{ p.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-farach">
+          <i class="bi bi-save"></i> {{ 'Guardar cambios' if capa else 'Crear CAPA' }}</button>
+        <a href="{{ url_for('capas.detalle', id=capa.id) if capa else url_for('capas.lista') }}"
+           class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

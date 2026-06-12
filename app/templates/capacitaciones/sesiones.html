@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav, badge %}
+{% block titulo %}Sesiones de Capacitación{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Sesiones de Capacitación</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.planes') }}">Capacitaciones</a></li>
+<li class="breadcrumb-item active">Sesiones</li>
+{% endblock %}
+
+{% block contenido %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('capacitaciones.planes') }}">Planes</a></li>
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('capacitaciones.sesiones') }}">Sesiones</a></li>
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('capacitaciones.entrenamientos') }}">Registros de Entrenamiento</a></li>
+</ul>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <form method="get" class="d-flex gap-2 align-items-center">
+      <select name="estado" class="form-select form-select-sm" style="width:auto;">
+        <option value="">Todos los estados</option>
+        {% for e in estados %}
+        <option value="{{ e }}" {{ 'selected' if request.args.get('estado') == e }}>{{ e.title() }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-secondary">Filtrar</button>
+    </form>
+    {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+    <a href="{{ url_for('capacitaciones.nueva_sesion') }}" class="btn btn-sm btn-farach">
+      <i class="bi bi-plus-lg"></i> Programar Sesión</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Título</th><th>Plan</th><th>Fecha</th><th>Horario</th>
+            <th>Facilitador</th><th>Lugar</th><th>Asistentes</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for s in sesiones %}
+        <tr>
+          <td>{{ s.titulo | truncate(40) }}</td>
+          <td class="small">{{ s.plan.titulo | truncate(30) if s.plan else '—' }}</td>
+          <td>{{ s.fecha_sesion | fecha }}</td>
+          <td class="small">{{ s.hora_inicio or '—' }} - {{ s.hora_fin or '—' }}</td>
+          <td class="small">{{ s.facilitador or '—' }}</td>
+          <td class="small">{{ s.lugar or '—' }}</td>
+          <td>{{ s.asistencias | length }}</td>
+          <td>{{ badge(s.estado, s.estado_nombre) }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('capacitaciones.detalle_sesion', id=s.id) }}"
+               class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">No hay sesiones registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'capacitaciones.sesiones') }}</div>
+</div>
+{% endblock %}

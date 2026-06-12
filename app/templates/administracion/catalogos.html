@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Catálogos{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Administración — Catálogos del Sistema</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administración</li>
+<li class="breadcrumb-item active">Catálogos</li>
+{% endblock %}
+
+{% block contenido %}
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDeptos">Departamentos</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabTipos">Tipos de Documento</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCargos">Cargos / Posiciones</button></li>
+</ul>
+
+<div class="tab-content">
+  <!-- Departamentos -->
+  <div class="tab-pane fade show active" id="tabDeptos">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Departamentos</span>
+        <button class="btn btn-sm btn-farach" data-bs-toggle="modal" data-bs-target="#modalDepto"
+                onclick="prepararDepto()"><i class="bi bi-plus-lg"></i> Nuevo</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th>Código</th><th>Nombre</th><th>Jefe</th><th>Activo</th><th></th></tr></thead>
+          <tbody>
+            {% for d in departamentos %}
+            <tr>
+              <td class="fw-semibold">{{ d.codigo }}</td>
+              <td>{{ d.nombre }}</td>
+              <td>{{ d.jefe or '—' }}</td>
+              <td>{% if d.activo %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDepto"
+                        onclick="prepararDepto({{ d.id }}, '{{ d.codigo }}', '{{ d.nombre | e }}', '{{ d.jefe | e if d.jefe else '' }}', {{ 'true' if d.activo else 'false' }})">
+                  <i class="bi bi-pencil"></i></button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tipos de documento -->
+  <div class="tab-pane fade" id="tabTipos">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Tipos de Documento (sistema FAFII)</span>
+        <button class="btn btn-sm btn-farach" data-bs-toggle="modal" data-bs-target="#modalTipo"
+                onclick="prepararTipo()"><i class="bi bi-plus-lg"></i> Nuevo</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th>Prefijo</th><th>Nombre</th><th>Descripción</th><th>Activo</th><th></th></tr></thead>
+          <tbody>
+            {% for t in tipos %}
+            <tr>
+              <td class="fw-semibold">{{ t.prefijo }}</td>
+              <td>{{ t.nombre }}</td>
+              <td class="small">{{ t.descripcion or '—' }}</td>
+              <td>{% if t.activo %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTipo"
+                        onclick="prepararTipo({{ t.id }}, '{{ t.prefijo }}', '{{ t.nombre | e }}', '{{ t.descripcion | e if t.descripcion else '' }}', {{ 'true' if t.activo else 'false' }})">
+                  <i class="bi bi-pencil"></i></button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cargos -->
+  <div class="tab-pane fade" id="tabCargos">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Cargos / Posiciones</span>
+        <button class="btn btn-sm btn-farach" data-bs-toggle="modal" data-bs-target="#modalCargo"
+                onclick="prepararCargo()"><i class="bi bi-plus-lg"></i> Nuevo</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th>Nombre</th><th>Departamento</th><th>Descripción</th><th>Activo</th><th></th></tr></thead>
+          <tbody>
+            {% for c in cargos %}
+            <tr>
+              <td class="fw-semibold">{{ c.nombre }}</td>
+              <td>{{ c.departamento.codigo if c.departamento else '—' }}</td>
+              <td class="small">{{ c.descripcion or '—' }}</td>
+              <td>{% if c.activo %}<span class="badge text-bg-success">Sí</span>{% else %}<span class="badge text-bg-secondary">No</span>{% endif %}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCargo"
+                        onclick="prepararCargo({{ c.id }}, '{{ c.nombre | e }}', '{{ c.departamento_id or '' }}', '{{ c.descripcion | e if c.descripcion else '' }}', {{ 'true' if c.activo else 'false' }})">
+                  <i class="bi bi-pencil"></i></button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal departamento -->
+<div class="modal fade" id="modalDepto" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('administracion.guardar_departamento') }}" class="modal-content">
+      {{ csrf() }}
+      <input type="hidden" name="id" id="depto_id">
+      <div class="modal-header"><h6 class="modal-title">Departamento</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body row g-3">
+        <div class="col-md-4"><label class="form-label">Código *</label>
+          <input type="text" name="codigo" id="depto_codigo" class="form-control" maxlength="10" required></div>
+        <div class="col-md-8"><label class="form-label">Nombre *</label>
+          <input type="text" name="nombre" id="depto_nombre" class="form-control" required></div>
+        <div class="col-md-8"><label class="form-label">Jefe</label>
+          <input type="text" name="jefe" id="depto_jefe" class="form-control"></div>
+        <div class="col-md-4"><div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="activo" id="depto_activo" checked>
+          <label class="form-check-label" for="depto_activo">Activo</label></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-farach">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal tipo de documento -->
+<div class="modal fade" id="modalTipo" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('administracion.guardar_tipo') }}" class="modal-content">
+      {{ csrf() }}
+      <input type="hidden" name="id" id="tipo_id">
+      <div class="modal-header"><h6 class="modal-title">Tipo de Documento</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body row g-3">
+        <div class="col-md-4"><label class="form-label">Prefijo *</label>
+          <input type="text" name="prefijo" id="tipo_prefijo" class="form-control" maxlength="10" required></div>
+        <div class="col-md-8"><label class="form-label">Nombre *</label>
+          <input type="text" name="nombre" id="tipo_nombre" class="form-control" required></div>
+        <div class="col-md-8"><label class="form-label">Descripción</label>
+          <input type="text" name="descripcion" id="tipo_descripcion" class="form-control"></div>
+        <div class="col-md-4"><div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="activo" id="tipo_activo" checked>
+          <label class="form-check-label" for="tipo_activo">Activo</label></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-farach">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal cargo -->
+<div class="modal fade" id="modalCargo" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('administracion.guardar_cargo') }}" class="modal-content">
+      {{ csrf() }}
+      <input type="hidden" name="id" id="cargo_id">
+      <div class="modal-header"><h6 class="modal-title">Cargo / Posición</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body row g-3">
+        <div class="col-12"><label class="form-label">Nombre *</label>
+          <input type="text" name="nombre" id="cargo_nombre" class="form-control" required></div>
+        <div class="col-md-8"><label class="form-label">Departamento</label>
+          <select name="departamento_id" id="cargo_departamento" class="form-select">
+            <option value="">Seleccione…</option>
+            {% for d in departamentos %}
+            <option value="{{ d.id }}">{{ d.codigo }} — {{ d.nombre }}</option>
+            {% endfor %}
+          </select></div>
+        <div class="col-md-4"><div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="activo" id="cargo_activo" checked>
+          <label class="form-check-label" for="cargo_activo">Activo</label></div></div>
+        <div class="col-12"><label class="form-label">Descripción</label>
+          <input type="text" name="descripcion" id="cargo_descripcion" class="form-control"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-farach">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function prepararDepto(id, codigo, nombre, jefe, activo) {
+  document.getElementById('depto_id').value = id || '';
+  document.getElementById('depto_codigo').value = codigo || '';
+  document.getElementById('depto_nombre').value = nombre || '';
+  document.getElementById('depto_jefe').value = jefe || '';
+  document.getElementById('depto_activo').checked = activo === undefined ? true : activo;
+}
+function prepararTipo(id, prefijo, nombre, descripcion, activo) {
+  document.getElementById('tipo_id').value = id || '';
+  document.getElementById('tipo_prefijo').value = prefijo || '';
+  document.getElementById('tipo_nombre').value = nombre || '';
+  document.getElementById('tipo_descripcion').value = descripcion || '';
+  document.getElementById('tipo_activo').checked = activo === undefined ? true : activo;
+}
+function prepararCargo(id, nombre, departamentoId, descripcion, activo) {
+  document.getElementById('cargo_id').value = id || '';
+  document.getElementById('cargo_nombre').value = nombre || '';
+  document.getElementById('cargo_departamento').value = departamentoId || '';
+  document.getElementById('cargo_descripcion').value = descripcion || '';
+  document.getElementById('cargo_activo').checked = activo === undefined ? true : activo;
+}
+</script>
+{% endblock %}

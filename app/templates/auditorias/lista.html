@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav, badge %}
+{% block titulo %}Auditorías{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Auditorías</h5>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Auditorías</li>{% endblock %}
+
+{% block contenido %}
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Estado</label>
+        <select name="estado" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for e in estados %}
+          <option value="{{ e }}" {{ 'selected' if request.args.get('estado') == e }}>{{ e.replace('_', ' ').title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Tipo</label>
+        <select name="tipo" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for t in tipos %}
+          <option value="{{ t }}" {{ 'selected' if request.args.get('tipo') == t }}>{{ t.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('auditorias.lista') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-search"></i> Auditorías</span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('auditorias.exportar_hallazgos') }}" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-file-earmark-excel"></i> Hallazgos Excel</a>
+      {% if current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+      <a href="{{ url_for('auditorias.nueva') }}" class="btn btn-sm btn-farach">
+        <i class="bi bi-plus-lg"></i> Planificar Auditoría</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Número</th><th>Título</th><th>Tipo</th><th>Auditor líder</th>
+            <th>Inicio</th><th>Fin planificado</th><th>Hallazgos</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for aud in auditorias %}
+        <tr>
+          <td class="fw-semibold">{{ aud.numero_auditoria }}</td>
+          <td>{{ aud.titulo | truncate(40) }}</td>
+          <td class="small">{{ aud.tipo.title() }}</td>
+          <td class="small">{{ aud.auditor_lider or '—' }}</td>
+          <td>{{ aud.fecha_inicio | fecha }}</td>
+          <td>{{ aud.fecha_fin_planificada | fecha }}</td>
+          <td>{{ aud.hallazgos | length }}</td>
+          <td>{{ badge(aud.estado, aud.estado_nombre) }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('auditorias.detalle', id=aud.id) }}"
+               class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">No hay auditorías registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'auditorias.lista') }}</div>
+</div>
+{% endblock %}

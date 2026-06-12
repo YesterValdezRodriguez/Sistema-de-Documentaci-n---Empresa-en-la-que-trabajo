@@ -1,0 +1,38 @@
+{# Macros reutilizables de QMS FARACH #}
+
+{% macro csrf() -%}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{% macro paginacion(pag, endpoint) -%}
+{% if pag.pages > 1 %}
+<nav aria-label="Paginación">
+  <ul class="pagination pagination-sm justify-content-center mb-0">
+    <li class="page-item {{ 'disabled' if not pag.has_prev }}">
+      <a class="page-link"
+         href="{{ url_for(endpoint, pagina=pag.prev_num, **request.args.to_dict() | reject_pagina) if pag.has_prev else '#' }}">&laquo;</a>
+    </li>
+    {% for p in pag.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+      <li class="page-item {{ 'active' if p == pag.page }}">
+        <a class="page-link" href="{{ url_for(endpoint, pagina=p, **request.args.to_dict() | reject_pagina) }}">{{ p }}</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    <li class="page-item {{ 'disabled' if not pag.has_next }}">
+      <a class="page-link"
+         href="{{ url_for(endpoint, pagina=pag.next_num, **request.args.to_dict() | reject_pagina) if pag.has_next else '#' }}">&raquo;</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+<p class="text-center text-muted small mt-2 mb-0">
+  {{ pag.total }} registro(s) — página {{ pag.page }} de {{ pag.pages or 1 }}
+</p>
+{%- endmacro %}
+
+{% macro badge(estado, nombre=None) -%}
+<span class="badge text-bg-{{ estado | badge_estado }}">{{ nombre or estado }}</span>
+{%- endmacro %}

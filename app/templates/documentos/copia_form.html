@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Registrar copia — {{ documento.codigo }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Registrar copia controlada</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.lista') }}">Documentos</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.detalle', id=documento.id) }}">{{ documento.codigo }}</a></li>
+<li class="breadcrumb-item active">Nueva copia</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Copia controlada de {{ documento.codigo }} — {{ documento.titulo | truncate(50) }}</div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          {{ csrf() }}
+          <div class="col-md-4">
+            <label class="form-label">Número de copia *</label>
+            <input type="number" name="numero_copia" class="form-control" min="1"
+                   value="{{ siguiente_copia }}" required>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label">Destinatario *</label>
+            <input type="text" name="destinatario" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Departamento</label>
+            <select name="departamento_id" class="form-select">
+              <option value="">Seleccione…</option>
+              {% for d in departamentos %}
+              <option value="{{ d.id }}">{{ d.codigo }} — {{ d.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fecha de entrega</label>
+            <input type="date" name="fecha_entrega" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" name="firmado" id="chkFirmado">
+              <label class="form-check-label" for="chkFirmado">Firmado al recibir</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fecha de firma</label>
+            <input type="date" name="fecha_firma" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Observaciones</label>
+            <textarea name="observaciones" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-farach"><i class="bi bi-save"></i> Registrar copia</button>
+            <a href="{{ url_for('documentos.detalle', id=documento.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

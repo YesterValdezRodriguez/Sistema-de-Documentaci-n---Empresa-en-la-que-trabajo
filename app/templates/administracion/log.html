@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav %}
+{% block titulo %}Log del Sistema{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Administración — Log de Auditoría del Sistema</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administración</li>
+<li class="breadcrumb-item active">Log del Sistema</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small mb-1">Usuario</label>
+        <select name="usuario" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for u in usuarios %}
+          <option value="{{ u.id }}" {{ 'selected' if request.args.get('usuario') == u.id|string }}>{{ u.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Módulo</label>
+        <input type="text" name="modulo" class="form-control form-control-sm"
+               value="{{ request.args.get('modulo', '') }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Desde</label>
+        <input type="date" name="desde" class="form-control form-control-sm"
+               value="{{ request.args.get('desde', '') }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">Hasta</label>
+        <input type="date" name="hasta" class="form-control form-control-sm"
+               value="{{ request.args.get('hasta', '') }}">
+      </div>
+      <div class="col-md-3 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('administracion.log') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-journal-text"></i> Registro de actividad</div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead>
+        <tr><th>Fecha/Hora</th><th>Usuario</th><th>Acción</th><th>Módulo</th>
+            <th>Descripción</th><th>IP</th></tr>
+      </thead>
+      <tbody>
+        {% for r in registros %}
+        <tr>
+          <td class="text-nowrap">{{ r.fecha_hora | fecha_hora }}</td>
+          <td>{{ r.usuario.username if r.usuario else '—' }}</td>
+          <td><span class="badge text-bg-light border">{{ r.accion }}</span></td>
+          <td class="small">{{ r.modulo }}</td>
+          <td class="small">{{ r.descripcion }}</td>
+          <td class="small text-muted">{{ r.ip_address or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Sin registros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'administracion.log') }}</div>
+</div>
+{% endblock %}

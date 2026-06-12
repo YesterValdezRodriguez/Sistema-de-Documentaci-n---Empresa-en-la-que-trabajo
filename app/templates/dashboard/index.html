@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge %}
+{% block titulo %}Dashboard{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Dashboard</h5>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dashboard</li>{% endblock %}
+
+{% block contenido %}
+<!-- Tarjetas KPI -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card tarjeta-kpi exito">
+      <div class="card-body py-3">
+        <div class="etiqueta">Documentos vigentes</div>
+        <div class="valor">{{ docs_vigentes }} <small class="fs-6 text-muted">/ {{ total_documentos }}</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card tarjeta-kpi alerta">
+      <div class="card-body py-3">
+        <div class="etiqueta">Por vencer (30 días)</div>
+        <div class="valor text-warning">{{ docs_por_vencer }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card tarjeta-kpi">
+      <div class="card-body py-3">
+        <div class="etiqueta">Obsoletos este mes</div>
+        <div class="valor">{{ docs_obsoletos_mes }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card tarjeta-kpi peligro">
+      <div class="card-body py-3">
+        <div class="etiqueta">CAPAs abiertas / vencidas</div>
+        <div class="valor">{{ capas_abiertas }} <small class="fs-5 text-danger">/ {{ capas_vencidas }}</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi">
+      <div class="card-body py-3">
+        <div class="etiqueta">Solicitudes de cambio en evaluación</div>
+        <div class="valor">{{ sc_en_evaluacion }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi">
+      <div class="card-body py-3">
+        <div class="etiqueta">Capacitaciones próximas (7 días)</div>
+        <div class="valor">{{ sesiones_proximas }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card tarjeta-kpi">
+      <div class="card-body py-3">
+        <div class="etiqueta">Auditorías en curso</div>
+        <div class="valor">{{ auditorias_en_curso }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header">Documentos por departamento</div>
+      <div class="card-body"><canvas id="graficoDeptos" height="220"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-3">
+    <div class="card h-100">
+      <div class="card-header">CAPAs por estado</div>
+      <div class="card-body"><canvas id="graficoCapas" height="220"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Documentos creados por mes</div>
+      <div class="card-body"><canvas id="graficoMeses" height="220"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Alertas -->
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header text-warning">
+        <i class="bi bi-exclamation-triangle"></i> Documentos próximos a vencer
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for doc in alertas_docs %}
+        <li class="list-group-item d-flex justify-content-between small">
+          <a href="{{ url_for('documentos.detalle', id=doc.id) }}">{{ doc.codigo }} — {{ doc.titulo | truncate(40) }}</a>
+          <span class="text-nowrap {{ 'text-danger fw-bold' if doc.fecha_proxima_revision < hoy }}">{{ doc.fecha_proxima_revision | fecha }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted small">Sin documentos por vencer.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header text-danger">
+        <i class="bi bi-exclamation-octagon"></i> CAPAs vencidas o por vencer
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for capa in alertas_capas %}
+        <li class="list-group-item d-flex justify-content-between small">
+          {% if current_user.tiene_rol('admin', 'gestor_doc', 'aprobador') %}
+          <a href="{{ url_for('capas.detalle', id=capa.id) }}">{{ capa.numero_capa }} — {{ capa.titulo | truncate(35) }}</a>
+          {% else %}
+          <span>{{ capa.numero_capa }} — {{ capa.titulo | truncate(35) }}</span>
+          {% endif %}
+          <span class="text-nowrap {{ 'text-danger fw-bold' if capa.esta_vencida }}">{{ capa.fecha_limite_implementacion | fecha }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted small">Sin CAPAs en alerta.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header" style="color:#FD7E14;">
+        <i class="bi bi-clock-history"></i> Cambios abiertos &gt; 30 días
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for sc in alertas_sc %}
+        <li class="list-group-item d-flex justify-content-between small">
+          <a href="{{ url_for('cambios.detalle', id=sc.id) }}">{{ sc.numero_sc }} — {{ sc.titulo | truncate(35) }}</a>
+          <span class="text-nowrap">{{ sc.fecha_solicitud | fecha }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted small">Sin solicitudes antiguas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const azul = '#1B3A6B', azulMedio = '#2E5DAC';
+
+new Chart(document.getElementById('graficoDeptos'), {
+  type: 'bar',
+  data: {
+    labels: {{ grafico_deptos_labels | tojson }},
+    datasets: [{
+      label: 'Documentos',
+      data: {{ grafico_deptos_valores | tojson }},
+      backgroundColor: azulMedio
+    }]
+  },
+  options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+});
+
+new Chart(document.getElementById('graficoCapas'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ grafico_capas_labels | tojson }},
+    datasets: [{
+      data: {{ grafico_capas_valores | tojson }},
+      backgroundColor: ['#FD7E14', '#2E5DAC', '#1B3A6B', '#28A745', '#DC3545']
+    }]
+  },
+  options: { plugins: { legend: { position: 'bottom' } } }
+});
+
+new Chart(document.getElementById('graficoMeses'), {
+  type: 'line',
+  data: {
+    labels: {{ grafico_meses_labels | tojson }},
+    datasets: [{
+      label: 'Documentos creados',
+      data: {{ grafico_meses_valores | tojson }},
+      borderColor: azul,
+      backgroundColor: 'rgba(46,93,172,0.15)',
+      fill: true,
+      tension: 0.3
+    }]
+  },
+  options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+});
+</script>
+{% endblock %}

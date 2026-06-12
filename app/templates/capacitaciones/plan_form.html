@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}{{ 'Editar' if plan else 'Nuevo' }} Plan{% endblock %}
+{% block encabezado %}<h5 class="mb-0">{{ 'Editar Plan' if plan else 'Nuevo Plan de Capacitación' }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capacitaciones.planes') }}">Capacitaciones</a></li>
+<li class="breadcrumb-item active">{{ 'Editar plan' if plan else 'Nuevo plan' }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">{{ plan.titulo if plan else 'Datos del plan' }}</div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          {{ csrf() }}
+          <div class="col-md-8">
+            <label class="form-label">Título *</label>
+            <input type="text" name="titulo" class="form-control" required
+                   value="{{ plan.titulo if plan else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              {% for t in tipos %}
+              <option value="{{ t }}" {{ 'selected' if plan and plan.tipo == t }}>{{ t.title() }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Descripción</label>
+            <textarea name="descripcion" class="form-control" rows="2">{{ plan.descripcion if plan else '' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Documento relacionado (opcional)</label>
+            <select name="documento_id" class="form-select">
+              <option value="">Ninguno</option>
+              {% for d in documentos %}
+              <option value="{{ d.id }}" {{ 'selected' if plan and plan.documento_id == d.id }}>{{ d.codigo }} — {{ d.titulo | truncate(40) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Departamento</label>
+            <select name="departamento_id" class="form-select">
+              <option value="">Todos</option>
+              {% for d in departamentos %}
+              <option value="{{ d.id }}" {{ 'selected' if plan and plan.departamento_id == d.id }}>{{ d.codigo }} — {{ d.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Cargo al que aplica</label>
+            <input type="text" name="cargo_aplica" class="form-control" list="listaCargos"
+                   value="{{ plan.cargo_aplica if plan else '' }}">
+            <datalist id="listaCargos">
+              {% for c in cargos %}<option value="{{ c.nombre }}">{% endfor %}
+            </datalist>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Frecuencia (meses)</label>
+            <input type="number" name="frecuencia_meses" class="form-control" min="0"
+                   value="{{ plan.frecuencia_meses if plan else 0 }}">
+            <div class="form-text">0 = única vez</div>
+          </div>
+          {% if plan %}
+          <div class="col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" name="activo" id="chkActivo"
+                     {{ 'checked' if plan.activo }}>
+              <label class="form-check-label" for="chkActivo">Plan activo</label>
+            </div>
+          </div>
+          {% endif %}
+          <div class="col-12">
+            <button type="submit" class="btn btn-farach"><i class="bi bi-save"></i> Guardar</button>
+            <a href="{{ url_for('capacitaciones.planes') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

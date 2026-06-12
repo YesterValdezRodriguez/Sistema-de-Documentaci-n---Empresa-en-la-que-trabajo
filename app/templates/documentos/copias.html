@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import paginacion as pag_nav, csrf %}
+{% block titulo %}Copias Controladas{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Registro de Copias Controladas</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('documentos.lista') }}">Documentos</a></li>
+<li class="breadcrumb-item active">Copias controladas</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label small mb-1">Documento</label>
+        <select name="documento_id" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for d in documentos %}
+          <option value="{{ d.id }}" {{ 'selected' if request.args.get('documento_id') == d.id|string }}>{{ d.codigo }} — {{ d.titulo | truncate(50) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-1">
+        <button class="btn btn-sm btn-farach"><i class="bi bi-funnel"></i> Filtrar</button>
+        <a href="{{ url_for('documentos.copias') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-printer"></i> Copias controladas activas</div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Documento</th><th># Copia</th><th>Destinatario</th><th>Depto.</th>
+            <th>Entrega</th><th>Firmado</th><th>Observaciones</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for c in copias %}
+        <tr>
+          <td><a href="{{ url_for('documentos.detalle', id=c.documento_id) }}">{{ c.documento.codigo }}</a></td>
+          <td>{{ c.numero_copia }}</td>
+          <td>{{ c.destinatario }}</td>
+          <td>{{ c.departamento.codigo if c.departamento }}</td>
+          <td>{{ c.fecha_entrega | fecha }}</td>
+          <td>
+            {% if c.firmado %}<span class="badge text-bg-success">Sí — {{ c.fecha_firma | fecha }}</span>
+            {% else %}<span class="badge text-bg-warning">Pendiente</span>{% endif %}
+          </td>
+          <td class="small">{{ c.observaciones | truncate(40) if c.observaciones else '—' }}</td>
+          <td class="text-end">
+            {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+            {% if not c.firmado %}
+            <form method="post" action="{{ url_for('documentos.firmar_copia', id=c.id) }}" class="d-inline">
+              {{ csrf() }}
+              <button class="btn btn-sm btn-outline-success" title="Marcar firmada"><i class="bi bi-pen"></i></button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('documentos.retirar_copia', id=c.id) }}" class="d-inline"
+                  data-confirmar="¿Retirar esta copia controlada?">
+              {{ csrf() }}
+              <button class="btn btn-sm btn-outline-danger" title="Retirar copia"><i class="bi bi-x-lg"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No hay copias controladas registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">{{ pag_nav(paginacion, 'documentos.copias') }}</div>
+</div>
+{% endblock %}

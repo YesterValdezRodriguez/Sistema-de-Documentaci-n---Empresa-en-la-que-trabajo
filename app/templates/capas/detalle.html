@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge %}
+{% block titulo %}{{ capa.numero_capa }}{% endblock %}
+{% block encabezado %}<h5 class="mb-0">CAPA {{ capa.numero_capa }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('capas.lista') }}">CAPA</a></li>
+<li class="breadcrumb-item active">{{ capa.numero_capa }}</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">{{ capa.numero_capa }} — {{ capa.titulo }}</h4>
+    {{ badge('VENCIDA', 'Vencida') if capa.esta_vencida else badge(capa.estado, capa.estado_nombre) }}
+    <span class="badge text-bg-light border">{{ capa.tipo.title() }}</span>
+    <span class="badge text-bg-light border">Origen: {{ capa.origen.title() }}</span>
+    {{ badge(capa.prioridad, 'Prioridad ' ~ capa.prioridad.title()) }}
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('capas.reporte_pdf', id=capa.id) }}" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    {% if capa.estado != 'CERRADA' %}
+    <a href="{{ url_for('capas.editar', id=capa.id) }}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-pencil"></i> Editar</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header">Identificación y problema</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Departamento</th><td>{{ capa.departamento.nombre if capa.departamento else '—' }}</td></tr>
+            <tr><th class="ps-3">Área afectada</th><td>{{ capa.area_afectada or '—' }}</td></tr>
+            <tr><th class="ps-3">Responsable</th><td>{{ capa.responsable.nombre_completo if capa.responsable else '—' }}</td></tr>
+            <tr><th class="ps-3">Apertura</th><td>{{ capa.fecha_apertura | fecha }}</td></tr>
+            <tr><th class="ps-3">Fecha límite</th>
+              <td class="{{ 'text-danger fw-bold' if capa.esta_vencida }}">{{ capa.fecha_limite_implementacion | fecha }}</td></tr>
+            <tr><th class="ps-3">Hallazgo</th><td>{{ capa.descripcion_hallazgo or '—' }}</td></tr>
+            <tr><th class="ps-3">Problema</th><td>{{ capa.descripcion_problema or '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Acciones específicas -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-list-check"></i> Acciones específicas</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Acción</th><th>Responsable</th><th>F. Límite</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            {% for accion in capa.acciones %}
+            <tr>
+              <td class="small">{{ accion.descripcion_accion }}
+                {% if accion.evidencia %}<br><span class="text-muted">Evidencia: {{ accion.evidencia }}</span>{% endif %}
+              </td>
+              <td class="small">{{ accion.responsable.nombre_completo if accion.responsable else '—' }}</td>
+              <td>{{ accion.fecha_limite | fecha }}</td>
+              <td>{{ badge(accion.estado) }}</td>
+              <td class="text-end">
+                {% if accion.estado != 'COMPLETADA' and capa.estado != 'CERRADA' %}
+                <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
+                        data-bs-target="#modalAccion{{ accion.id }}"><i class="bi bi-check-lg"></i></button>
+                <!-- Modal completar acción -->
+                <div class="modal fade" id="modalAccion{{ accion.id }}" tabindex="-1">
+                  <div class="modal-dialog">
+                    <form method="post" action="{{ url_for('capas.completar_accion', id=accion.id) }}" class="modal-content text-start">
+                      {{ csrf() }}
+                      <div class="modal-header"><h6 class="modal-title">Completar acción</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                      <div class="modal-body">
+                        <label class="form-label">Evidencia</label>
+                        <textarea name="evidencia" class="form-control" rows="3"></textarea>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Completar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-3">Sin acciones registradas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if capa.estado != 'CERRADA' %}
+      <div class="card-footer">
+        <form method="post" action="{{ url_for('capas.nueva_accion', id=capa.id) }}" class="row g-2">
+          {{ csrf() }}
+          <div class="col-md-5">
+            <input type="text" name="descripcion_accion" class="form-control form-control-sm"
+                   placeholder="Nueva acción…" required>
+          </div>
+          <div class="col-md-3">
+            <select name="responsable_id" class="form-select form-select-sm">
+              <option value="">Responsable…</option>
+              {% for u in usuarios %}
+              <option value="{{ u.id }}">{{ u.nombre_completo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <input type="date" name="fecha_limite" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-sm btn-farach w-100"><i class="bi bi-plus-lg"></i> Agregar</button>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Implementación y cierre registrados -->
+    <div class="card">
+      <div class="card-header">Implementación y cierre</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr><th class="w-25 ps-3">Implementación</th>
+              <td>{% if capa.fecha_implementacion %}
+                {{ capa.implementado_por.nombre_completo if capa.implementado_por }} — {{ capa.fecha_implementacion | fecha }}<br>
+                <span class="small text-muted">{{ capa.evidencia_implementacion or '' }}</span>
+                {% else %}Pendiente{% endif %}</td></tr>
+            <tr><th class="ps-3">Verificación</th>
+              <td>{% if capa.fecha_verificacion %}
+                {{ capa.verificado_por.nombre_completo if capa.verificado_por }} — {{ capa.fecha_verificacion | fecha }}
+                — Efectividad: <strong>{{ 'Verificada' if capa.efectividad_verificada else 'No verificada' }}</strong>
+                {% else %}Pendiente{% endif %}</td></tr>
+            <tr><th class="ps-3">Cierre</th>
+              <td>{% if capa.fecha_cierre %}
+                {{ capa.cerrado_por.nombre_completo if capa.cerrado_por }} — {{ capa.fecha_cierre | fecha }}<br>
+                <span class="small text-muted">{{ capa.comentario_cierre or '' }}</span>
+                {% else %}Pendiente{% endif %}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if capa.estado != 'CERRADA' %}
+    <!-- Análisis de causa raíz -->
+    <div class="card mb-3">
+      <div class="card-header">Análisis de causa raíz y plan de acción</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('capas.analisis', id=capa.id) }}">
+          {{ csrf() }}
+          <div class="mb-2">
+            <label class="form-label small">Método de análisis</label>
+            <input type="text" name="metodo_analisis" class="form-control form-control-sm"
+                   placeholder="5 Porqués, Ishikawa…" value="{{ capa.metodo_analisis or '' }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Causa raíz identificada</label>
+            <textarea name="causa_raiz_identificada" class="form-control form-control-sm" rows="3">{{ capa.causa_raiz_identificada or '' }}</textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Acciones correctivas (plan)</label>
+            <textarea name="acciones_correctivas" class="form-control form-control-sm" rows="3">{{ capa.acciones_correctivas or '' }}</textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Recursos necesarios</label>
+            <textarea name="recursos_necesarios" class="form-control form-control-sm" rows="2">{{ capa.recursos_necesarios or '' }}</textarea>
+          </div>
+          <button class="btn btn-sm btn-farach"><i class="bi bi-save"></i> Guardar análisis</button>
+        </form>
+      </div>
+    </div>
+
+    {% if capa.estado in ('ABIERTA', 'EN_PROCESO') %}
+    <div class="card mb-3">
+      <div class="card-header">Registrar implementación</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('capas.implementar', id=capa.id) }}">
+          {{ csrf() }}
+          <div class="mb-2">
+            <label class="form-label small">Fecha de implementación</label>
+            <input type="date" name="fecha_implementacion" class="form-control form-control-sm">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Evidencia de implementación *</label>
+            <textarea name="evidencia_implementacion" class="form-control form-control-sm" rows="3" required></textarea>
+          </div>
+          <button class="btn btn-sm btn-farach"><i class="bi bi-check2-square"></i> Pasar a verificación</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if capa.estado == 'VERIFICACION' and current_user.tiene_rol('admin', 'aprobador') %}
+    <div class="card mb-3 border-success">
+      <div class="card-header text-success">Verificación de efectividad y cierre</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('capas.cerrar', id=capa.id) }}"
+              data-confirmar="¿Verificar y cerrar la CAPA {{ capa.numero_capa }}? Esta acción no puede revertirse.">
+          {{ csrf() }}
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="efectividad_verificada" id="chkEfec" checked>
+            <label class="form-check-label small" for="chkEfec">Efectividad verificada</label>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small">Comentario de cierre</label>
+            <textarea name="comentario_cierre" class="form-control form-control-sm" rows="3"></textarea>
+          </div>
+          <button class="btn btn-sm btn-success"><i class="bi bi-lock"></i> Verificar y cerrar</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle"></i> CAPA cerrada el {{ capa.fecha_cierre | fecha }}.
+    </div>
+    <div class="card">
+      <div class="card-header">Análisis registrado</div>
+      <div class="card-body small">
+        <p class="mb-1"><strong>Método:</strong> {{ capa.metodo_analisis or '—' }}</p>
+        <p class="mb-1"><strong>Causa raíz:</strong> {{ capa.causa_raiz_identificada or '—' }}</p>
+        <p class="mb-1"><strong>Plan de acción:</strong> {{ capa.acciones_correctivas or '—' }}</p>
+        <p class="mb-0"><strong>Recursos:</strong> {{ capa.recursos_necesarios or '—' }}</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
