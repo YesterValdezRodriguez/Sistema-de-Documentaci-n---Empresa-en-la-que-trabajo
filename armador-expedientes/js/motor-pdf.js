@@ -90,7 +90,7 @@
     } catch (e) { /* carácter no soportado por la fuente: se omite */ }
   }
 
-  function aplicarSellos(page, font, plantilla, item, ctx) {
+  function aplicarSellos(page, font, plantilla, meta, ctx) {
     const { rgb } = getPDFLib();
     const tam = page.getSize();
     const w = tam.width, h = tam.height;
@@ -103,16 +103,23 @@
       dibujarTexto(page, font, formatear(s.formatoEncabezado, ctx), s.posicionEncabezado || 'SUP_CEN', 8, azul, w, h);
     if (s.textoSello)
       dibujarTexto(page, font, formatear(s.textoSello, ctx), s.posicionSello || 'SUP_DER', 10, rojo, w, h);
-    if (item && item.sellarPaso && item.paso)
-      dibujarTexto(page, font, 'PASO: ' + item.paso, 'SUP_IZQ', 9, azul, w, h);
+    if (meta && meta.sellarPaso && meta.paso)
+      dibujarTexto(page, font, 'PASO: ' + meta.paso, 'SUP_IZQ', 9, azul, w, h);
     if (s.foliar && s.formatoFolio)
       dibujarTexto(page, font, formatear(s.formatoFolio, ctx), s.posicionFolio || 'INF_DER', 8, negro, w, h);
   }
 
   /**
    * Ensambla el expediente.
-   * @param {Object} plantilla  - { items:[...], sellos:{...} }
-   * @param {Function} obtenerBytes - async (item) => ArrayBuffer|Uint8Array|null
+   *
+   * Cada ítem aporta sus páginas (según su rango) y, además, puede llevar
+   * **inserciones**: PDFs que se intercalan *entre* las páginas de ese ítem
+   * (p. ej. un registro de limpieza que va después de la página 3 de la
+   * fórmula maestra). Cada inserción indica `despuesDePagina` (0 = al inicio;
+   * un número mayor que el total = al final).
+   *
+   * @param {Object} plantilla  - { items:[ { ..., inserciones:[...] } ], sellos:{...} }
+   * @param {Function} obtenerBytes - async (ref) => ArrayBuffer|Uint8Array|null
    * @param {Object} contexto   - { producto, lote, codigo, fecha, version }
    * @returns {Promise<Uint8Array|null>} bytes del PDF (null si no hay páginas)
    */
@@ -127,21 +134,59 @@
     const font = await salida.embedFont(StandardFonts.HelveticaBold);
     const metaPaginas = [];
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
+    // Emite las páginas de una referencia (ítem o inserción) al final del PDF.
+    async function emitirRef(ref) {
       let bytes;
-      try { bytes = await obtenerBytes(item); } catch (e) { bytes = null; }
-      if (!bytes) continue;
-      let src;
-      try { src = await PDFDocument.load(bytes, { ignoreEncryption: true }); }
-      catch (e) { continue; }
-      const total = src.getPageCount();
-      const indices = parseRango(item.rangoPaginas, total);
-      if (!indices.length) continue;
+      try { bytes = await obtenerBytes(ref); } catch (e) { bytes = null; }
+      if (!bytes) return 0;
+      let doc;
+      try { doc = await PDFDocument.load(bytes, { ignoreEncryption: true }); } catch (e) { return 0; }
+      const indices = parseRango(ref.rangoPaginas, doc.getPageCount());
+      if (!indices.length) return 0;
       let copiadas;
-      try { copiadas = await salida.copyPages(src, indices); }
-      catch (e) { continue; }
-      copiadas.forEach(function (pg) { salida.addPage(pg); metaPaginas.push(item); });
+      try { copiadas = await salida.copyPages(doc, indices); } catch (e) { return 0; }
+      copiadas.forEach(function (pg) {
+        salida.addPage(pg);
+        metaPaginas.push({ paso: ref.paso || '', sellarPaso: !!ref.sellarPaso });
+      });
+      return copiadas.length;
+    }
+
+    for (let k = 0; k < items.length; k++) {
+      const item = items[k];
+      const inserciones = (item.inserciones || []).slice().sort(function (a, b) {
+        return (a.despuesDePagina || 0) - (b.despuesDePagina || 0);
+      });
+
+      // Páginas base del ítem
+      let baseDoc = null, baseIndices = [];
+      let baseBytes;
+      try { baseBytes = await obtenerBytes(item); } catch (e) { baseBytes = null; }
+      if (baseBytes) {
+        try { baseDoc = await PDFDocument.load(baseBytes, { ignoreEncryption: true }); } catch (e) { baseDoc = null; }
+        if (baseDoc) baseIndices = parseRango(item.rangoPaginas, baseDoc.getPageCount());
+      }
+      let baseCopiadas = [];
+      if (baseDoc && baseIndices.length) {
+        try { baseCopiadas = await salida.copyPages(baseDoc, baseIndices); } catch (e) { baseCopiadas = []; }
+      }
+
+      // Inserciones antes de la primera página (despuesDePagina <= 0)
+      for (let i = 0; i < inserciones.length; i++) {
+        if ((inserciones[i].despuesDePagina || 0) <= 0) await emitirRef(inserciones[i]);
+      }
+      // Páginas base, intercalando las inserciones después de cada posición
+      for (let pos = 1; pos <= baseCopiadas.length; pos++) {
+        salida.addPage(baseCopiadas[pos - 1]);
+        metaPaginas.push({ paso: item.paso || '', sellarPaso: !!item.sellarPaso });
+        for (let i = 0; i < inserciones.length; i++) {
+          if ((inserciones[i].despuesDePagina || 0) === pos) await emitirRef(inserciones[i]);
+        }
+      }
+      // Inserciones más allá del final del ítem (o si el ítem no tiene base)
+      for (let i = 0; i < inserciones.length; i++) {
+        if ((inserciones[i].despuesDePagina || 0) > baseCopiadas.length) await emitirRef(inserciones[i]);
+      }
     }
 
     const paginas = salida.getPages();

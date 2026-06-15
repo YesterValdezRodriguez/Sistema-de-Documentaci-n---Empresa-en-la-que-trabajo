@@ -25,6 +25,13 @@ abre en el navegador y funciona sola.
 - **Plantillas (configuraciones)**: la estructura del expediente — qué registros
   van, en qué **orden**, qué **páginas** de cada uno y en qué **paso**. Se arma
   arrastrando los bloques (o con los botones ▲ ▼) y se reutiliza en cada lote.
+- **Inserción gráfica (registros entre páginas)**: la fórmula maestra es el
+  "corazón" y los registros son las "venas" que van *dentro* de sus páginas.
+  Con el botón **🖼** de cada bloque se abre la fórmula maestra como un
+  **carrusel de páginas** (miniaturas) y se **arrastra** el registro al hueco o
+  página donde debe ir (p. ej. el registro 002 entre las páginas 3 y 4). El PDF
+  final intercala esas páginas automáticamente; si la maestra cambia, la
+  posición "después de la página N" se mantiene.
 - **Sellado y foliado**: foliado de hojas, encabezado por hoja y sello (p. ej.
   `ORIGINAL` / `COPIA CONTROLADA`) con marcadores `{producto}` `{lote}`
   `{codigo}` `{fecha}` `{pagina}` `{total}` `{version}`, más sello del paso por
@@ -63,6 +70,9 @@ En **Datos / Respaldo**:
 - Todo el armado de PDF ocurre en el navegador con
   [pdf-lib](https://pdf-lib.js.org/) (incluido en `vendor/`, funciona sin
   conexión).
+- Las miniaturas de páginas de la vista gráfica se generan con
+  [pdf.js](https://mozilla.github.io/pdf.js/) (incluido en `vendor/pdfjs/`); el
+  worker se carga como script para que funcione también al abrir con `file://`.
 - Almacenamiento local con IndexedDB.
 - La carpeta `armador-expedientes/` es autónoma: puede copiarla a un USB, a una
   carpeta compartida o a su propio repositorio y seguirá funcionando.
@@ -76,6 +86,8 @@ armador-expedientes/
   css/estilos.css     Estilos
   js/motor-pdf.js     Motor de armado y sellado (pdf-lib)
   js/db.js            Almacenamiento local (IndexedDB)
-  js/app.js           Interfaz y lógica
-  vendor/pdf-lib.min.js   Librería de PDF (offline)
+  js/app.js           Interfaz y lógica (incluye la vista gráfica)
+  vendor/pdf-lib.min.js       Librería de PDF para armar (offline)
+  vendor/pdfjs/pdf.min.js     Visor de páginas / miniaturas (offline)
+  vendor/pdfjs/pdf.worker.min.js
 ```

@@ -131,8 +131,13 @@
     if (!v) return 0;
     return MotorPDF.parseRango(item.rangoPaginas, v.numPaginas || 0).length;
   }
+  function paginasItemConInserciones(item, mapa) {
+    let n = paginasItem(item, mapa);
+    (item.inserciones || []).forEach(function (ins) { n += paginasItem(ins, mapa); });
+    return n;
+  }
   function totalPaginas(plantilla, mapa) {
-    return (plantilla.items || []).reduce(function (s, it) { return s + paginasItem(it, mapa); }, 0);
+    return (plantilla.items || []).reduce(function (s, it) { return s + paginasItemConInserciones(it, mapa); }, 0);
   }
   function obtenerBytesFactory(mapa) {
     return async function (item) {
@@ -260,22 +265,41 @@
     const itemsHTML = plantilla.items.map(function (it, idx) {
       const a = mapa[it.archivoId];
       const v = versionEfectivaMeta(a, it);
+      const inserciones = (it.inserciones || []).slice().sort(function (x, y) { return (x.despuesDePagina || 0) - (y.despuesDePagina || 0); });
+      const insHTML = inserciones.map(function (ins) {
+        const ia = mapa[ins.archivoId];
+        const dp = ins.despuesDePagina || 0;
+        const pos = dp <= 0 ? 'al inicio' : ('después de pág. ' + dp);
+        return '<div class="insercion">' +
+          '<span class="flecha">⤵</span>' +
+          '<div class="ins-info"><span class="fuerte">' + esc(ia ? ia.nombre : '(archivo eliminado)') + '</span> ' +
+          '<span class="muted">— ' + pos + ' · ' + (ins.rangoPaginas ? ('págs. ' + esc(ins.rangoPaginas)) : 'todas') +
+          ' (' + paginasItem(ins, mapa) + ')' + (ins.paso ? (' · ' + esc(ins.paso) + (ins.sellarPaso ? ' 🔖' : '')) : '') + '</span></div>' +
+          '<button class="btn mini prim" data-edit-ins="' + ins.id + '" data-item="' + it.id + '" title="Editar inserción">✎</button>' +
+          '<button class="btn mini pel" data-quita-ins="' + ins.id + '" data-item="' + it.id + '" title="Quitar inserción">✕</button>' +
+          '</div>';
+      }).join('');
+      const insBloque = inserciones.length ? ('<div class="inserciones">' + insHTML + '</div>') : '';
       return '<div class="item" draggable="true" data-id="' + it.id + '">' +
-        '<span class="grip" title="Arrastrar">⋮⋮</span>' +
-        '<span class="orden">' + (idx + 1) + '</span>' +
-        '<div class="item-info"><div class="fuerte">' + esc(a ? a.nombre : '(archivo eliminado)') +
-          (a ? ' <span class="chip">' + esc(TIPOS[a.tipo] || a.tipo) + '</span>' : '') + '</div>' +
-        '<div class="muted small">' +
-          '↳ ' + (v ? ('v' + esc(v.numero) + (it.usarVersionActual ? ' (actual)' : ' (fija)')) : 'sin versión') + ' · ' +
-          (it.rangoPaginas ? ('págs. ' + esc(it.rangoPaginas)) : 'todas las págs.') + ' (' + paginasItem(it, mapa) + ') · ' +
-          (it.paso ? ('paso: ' + esc(it.paso) + (it.sellarPaso ? ' 🔖' : '')) : '<i>sin paso</i>') +
-        '</div>' + (it.titulo ? '<div class="small">' + esc(it.titulo) + '</div>' : '') + '</div>' +
-        '<div class="item-btns">' +
-          '<button class="btn mini" data-sube="' + it.id + '" ' + (idx === 0 ? 'disabled' : '') + ' title="Subir">▲</button>' +
-          '<button class="btn mini" data-baja="' + it.id + '" ' + (idx === plantilla.items.length - 1 ? 'disabled' : '') + ' title="Bajar">▼</button>' +
-          '<button class="btn mini prim" data-edit="' + it.id + '" title="Editar">✎</button>' +
-          '<button class="btn mini pel" data-quita="' + it.id + '" title="Quitar">✕</button>' +
-        '</div></div>';
+        '<div class="item-fila">' +
+          '<span class="grip" title="Arrastrar">⋮⋮</span>' +
+          '<span class="orden">' + (idx + 1) + '</span>' +
+          '<div class="item-info"><div class="fuerte">' + esc(a ? a.nombre : '(archivo eliminado)') +
+            (a ? ' <span class="chip">' + esc(TIPOS[a.tipo] || a.tipo) + '</span>' : '') + '</div>' +
+          '<div class="muted small">' +
+            '↳ ' + (v ? ('v' + esc(v.numero) + (it.usarVersionActual ? ' (actual)' : ' (fija)')) : 'sin versión') + ' · ' +
+            (it.rangoPaginas ? ('págs. ' + esc(it.rangoPaginas)) : 'todas las págs.') + ' (' + paginasItem(it, mapa) + ') · ' +
+            (it.paso ? ('paso: ' + esc(it.paso) + (it.sellarPaso ? ' 🔖' : '')) : '<i>sin paso</i>') +
+          '</div>' + (it.titulo ? '<div class="small">' + esc(it.titulo) + '</div>' : '') + '</div>' +
+          '<div class="item-btns">' +
+            '<button class="btn mini" data-grafico="' + it.id + '" title="Insertar gráficamente (ver páginas)">🖼</button>' +
+            '<button class="btn mini" data-ins="' + it.id + '" title="Insertar PDF entre páginas">⤵</button>' +
+            '<button class="btn mini" data-sube="' + it.id + '" ' + (idx === 0 ? 'disabled' : '') + ' title="Subir">▲</button>' +
+            '<button class="btn mini" data-baja="' + it.id + '" ' + (idx === plantilla.items.length - 1 ? 'disabled' : '') + ' title="Bajar">▼</button>' +
+            '<button class="btn mini prim" data-edit="' + it.id + '" title="Editar">✎</button>' +
+            '<button class="btn mini pel" data-quita="' + it.id + '" title="Quitar">✕</button>' +
+          '</div>' +
+        '</div>' + insBloque + '</div>';
     }).join('') || '<p class="centro muted pad">Aún no hay registros. Agregue el primero abajo.</p>';
 
     const opcArchivos = lista.map(function (a) {
@@ -352,6 +376,10 @@
     app.querySelectorAll('[data-baja]').forEach(function (b) { b.onclick = function () { moverItem(plantilla.id, b.getAttribute('data-baja'), 1); }; });
     app.querySelectorAll('[data-quita]').forEach(function (b) { b.onclick = function () { quitarItem(plantilla.id, b.getAttribute('data-quita')); }; });
     app.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { dialogoEditarItem(plantilla.id, b.getAttribute('data-edit')); }; });
+    app.querySelectorAll('[data-grafico]').forEach(function (b) { b.onclick = function () { location.hash = '#/grafico/' + plantilla.id + '/' + b.getAttribute('data-grafico'); }; });
+    app.querySelectorAll('[data-ins]').forEach(function (b) { b.onclick = function () { dialogoInsercion(plantilla.id, b.getAttribute('data-ins'), null); }; });
+    app.querySelectorAll('[data-edit-ins]').forEach(function (b) { b.onclick = function () { dialogoInsercion(plantilla.id, b.getAttribute('data-item'), b.getAttribute('data-edit-ins')); }; });
+    app.querySelectorAll('[data-quita-ins]').forEach(function (b) { b.onclick = function () { quitarInsercion(plantilla.id, b.getAttribute('data-item'), b.getAttribute('data-quita-ins')); }; });
 
     activarArrastre(plantilla.id);
   }
@@ -469,6 +497,99 @@
     renderBuilder(id);
   }
 
+  // ---- Inserciones: PDFs intercalados entre las páginas de un ítem ----
+  async function dialogoInsercion(plantillaId, itemId, insId, onDone) {
+    onDone = onDone || function () { renderBuilder(plantillaId); };
+    const p = await DB.get('plantillas', plantillaId);
+    const item = (p.items || []).find(function (x) { return x.id === itemId; });
+    if (!item) return;
+    const { lista, mapa } = await archivosPorId();
+    const ins = insId ? (item.inserciones || []).find(function (x) { return x.id === insId; }) : null;
+    const baseA = mapa[item.archivoId];
+    const basePags = paginasItem(item, mapa);
+    const opc = lista.map(function (a) {
+      return '<option value="' + a.id + '"' + (ins && ins.archivoId === a.id ? ' selected' : '') + '>' +
+        esc((a.codigo ? a.codigo + ' — ' : '') + a.nombre) +
+        ' (' + (versionActual(a) ? versionActual(a).numPaginas : 0) + ' pág.)</option>';
+    }).join('');
+    const cuerpo =
+      '<p class="small muted">Se intercala un PDF entre las páginas de <b>' + esc(baseA ? baseA.nombre : 'este documento') +
+      '</b> (' + basePags + ' pág.).</p><div class="grid">' +
+      '<label class="c12">PDF a insertar<select id="in_archivo"><option value="">— Elegir —</option>' + opc + '</select></label>' +
+      '<label class="c6">Insertar después de la página<input type="number" min="0" id="in_pos" value="' + (ins ? ins.despuesDePagina : '') + '" placeholder="ej. 3"></label>' +
+      '<label class="c6">Páginas del PDF<input id="in_rango" value="' + (ins ? esc(ins.rangoPaginas || '') : '') + '" placeholder="todas"></label>' +
+      '<label class="c12">Paso / etapa<input id="in_paso" value="' + (ins ? esc(ins.paso || '') : '') + '" placeholder="Ej. Limpieza de equipo"></label>' +
+      '<label class="c12 check"><input type="checkbox" id="in_sellar"' + (ins && ins.sellarPaso ? ' checked' : '') + '> Sellar el paso en estas hojas</label>' +
+      '</div><div class="small muted">0 = al inicio del documento. Para que el PDF quede como página 4, ponga <b>3</b>. ' +
+      'Si lo deja vacío, se añade al final del documento.</div>';
+    modal(insId ? 'Editar inserción' : 'Insertar PDF entre páginas', cuerpo, [
+      { texto: 'Cancelar', clase: 'sec', onClick: function (d) { d.close(); } },
+      {
+        texto: 'Guardar', clase: 'prim', onClick: async function (d) {
+          const archivoId = d.querySelector('#in_archivo').value;
+          if (!archivoId) { toast('Seleccione un PDF.', 'pel'); return; }
+          const rango = d.querySelector('#in_rango').value.trim();
+          const err = MotorPDF.validarRango(rango);
+          if (err) { toast(err, 'pel'); return; }
+          const posV = d.querySelector('#in_pos').value.trim();
+          const datos = {
+            archivoId: archivoId, rangoPaginas: rango,
+            despuesDePagina: posV === '' ? basePags : Math.max(0, parseInt(posV, 10) || 0),
+            paso: d.querySelector('#in_paso').value.trim(),
+            sellarPaso: d.querySelector('#in_sellar').checked
+          };
+          await mutarPlantilla(plantillaId, function (pl) {
+            const it = (pl.items || []).find(function (x) { return x.id === itemId; });
+            if (!it) return;
+            it.inserciones = it.inserciones || [];
+            if (insId) {
+              const e = it.inserciones.find(function (x) { return x.id === insId; });
+              if (e) {
+                e.archivoId = datos.archivoId; e.rangoPaginas = datos.rangoPaginas;
+                e.despuesDePagina = datos.despuesDePagina; e.paso = datos.paso; e.sellarPaso = datos.sellarPaso;
+              }
+            } else {
+              it.inserciones.push({
+                id: uid(), archivoId: datos.archivoId, usarVersionActual: true, versionFijaId: null,
+                rangoPaginas: datos.rangoPaginas, despuesDePagina: datos.despuesDePagina,
+                paso: datos.paso, sellarPaso: datos.sellarPaso, titulo: ''
+              });
+            }
+          });
+          d.close();
+          toast(insId ? 'Inserción actualizada.' : 'PDF insertado entre páginas.');
+          onDone();
+        }
+      }
+    ]);
+  }
+  async function quitarInsercion(plantillaId, itemId, insId, onDone) {
+    if (!confirmar('¿Quitar esta inserción?')) return;
+    await mutarPlantilla(plantillaId, function (pl) {
+      const it = (pl.items || []).find(function (x) { return x.id === itemId; });
+      if (it) it.inserciones = (it.inserciones || []).filter(function (x) { return x.id !== insId; });
+    });
+    toast('Inserción quitada.');
+    (onDone || function () { renderBuilder(plantillaId); })();
+  }
+
+  // Inserta un registro (con valores por defecto) en una posición concreta —
+  // usado por el arrastre en la vista gráfica.
+  async function insertarRegistro(plantillaId, itemId, archivoId, despuesDePagina, onDone) {
+    await mutarPlantilla(plantillaId, function (pl) {
+      const it = (pl.items || []).find(function (x) { return x.id === itemId; });
+      if (!it) return;
+      it.inserciones = it.inserciones || [];
+      it.inserciones.push({
+        id: uid(), archivoId: archivoId, usarVersionActual: true, versionFijaId: null,
+        rangoPaginas: '', despuesDePagina: Math.max(0, despuesDePagina | 0),
+        paso: '', sellarPaso: false, titulo: ''
+      });
+    });
+    toast('Registro insertado.');
+    if (onDone) onDone();
+  }
+
   async function dialogoEditarItem(plantillaId, itemId) {
     const p = await DB.get('plantillas', plantillaId);
     const it = (p.items || []).find(function (x) { return x.id === itemId; });
@@ -529,7 +650,11 @@
           const copia = JSON.parse(JSON.stringify(plantilla));
           copia.id = uid();
           copia.nombre = d.querySelector('#dup_nombre').value.trim() || (plantilla.nombre + ' (copia)');
-          copia.items = (copia.items || []).map(function (it) { it.id = uid(); return it; });
+          copia.items = (copia.items || []).map(function (it) {
+            it.id = uid();
+            it.inserciones = (it.inserciones || []).map(function (ins) { ins.id = uid(); return ins; });
+            return it;
+          });
           copia.creado = copia.modificado = new Date().toISOString();
           await DB.put('plantillas', copia);
           d.close();
@@ -538,6 +663,155 @@
         }
       }
     ]);
+  }
+
+  // ==================================================================
+  //  VISTA GRÁFICA: insertar registros arrastrándolos sobre las páginas
+  // ==================================================================
+  const _docCache = {}; // versionId -> Promise<doc pdf.js>
+
+  function pdfjsDisponible() { return !!window.pdfjsLib; }
+
+  function docPdfjs(versionId) {
+    if (!versionId) return Promise.resolve(null);
+    if (_docCache[versionId]) return _docCache[versionId];
+    _docCache[versionId] = DB.getBlob(versionId).then(function (ab) {
+      if (!ab) return null;
+      const u = new Uint8Array(ab.slice ? ab.slice(0) : ab);
+      return window.pdfjsLib.getDocument({ data: u }).promise;
+    });
+    return _docCache[versionId];
+  }
+
+  async function pintarMiniatura(canvas, versionId, numPagina, escala) {
+    try {
+      const doc = await docPdfjs(versionId);
+      if (!doc) return;
+      const page = await doc.getPage(numPagina);
+      const vp = page.getViewport({ scale: escala || 0.35 });
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      canvas.classList.add('listo');
+    } catch (e) { /* miniatura no disponible */ }
+  }
+
+  function pintarLazy() {
+    const canvases = Array.prototype.slice.call(document.querySelectorAll('.mini-canvas'));
+    const pintar = function (c) {
+      pintarMiniatura(c, c.getAttribute('data-version'),
+        parseInt(c.getAttribute('data-pagina') || '1', 10),
+        c.classList.contains('ins-canvas') ? 0.2 : 0.38);
+    };
+    if (!('IntersectionObserver' in window)) { canvases.forEach(pintar); return; }
+    const obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (en) {
+        if (en.isIntersecting) { obs.unobserve(en.target); pintar(en.target); }
+      });
+    }, { root: document.getElementById('paginasGrafico'), rootMargin: '400px' });
+    canvases.forEach(function (c) { obs.observe(c); });
+  }
+
+  async function renderGrafico(plantillaId, itemId) {
+    const plantilla = await DB.get('plantillas', plantillaId);
+    if (!plantilla) { app.innerHTML = '<div class="card">Plantilla no encontrada.</div>'; return; }
+    const item = (plantilla.items || []).find(function (x) { return x.id === itemId; });
+    const volver = '#/plantilla/' + plantillaId;
+    if (!item) { location.hash = volver; return; }
+    const { lista, mapa } = await archivosPorId();
+    const archivoBase = mapa[item.archivoId];
+    const vBase = versionEfectivaMeta(archivoBase, item);
+
+    if (!pdfjsDisponible() || !vBase) {
+      app.innerHTML = '<div class="card"><p>' +
+        (vBase ? 'No se pudo cargar el visor de páginas.' : 'Este bloque no tiene un PDF con versión disponible.') +
+        '</p><a class="btn" href="' + volver + '">‹ Volver</a></div>';
+      return;
+    }
+
+    const baseIndices = MotorPDF.parseRango(item.rangoPaginas, vBase.numPaginas || 0);
+    const inserciones = (item.inserciones || []).slice().sort(function (a, b) { return (a.despuesDePagina || 0) - (b.despuesDePagina || 0); });
+
+    const paleta = lista.map(function (a) {
+      const va = versionActual(a);
+      return '<div class="reg-card" draggable="true" data-archivo="' + a.id + '">' +
+        '<div class="reg-nom">' + esc(a.nombre) + '</div>' +
+        '<div class="muted small">' + esc(TIPOS[a.tipo] || a.tipo) + ' · ' + (va ? va.numPaginas : 0) + ' pág.</div></div>';
+    }).join('') || '<p class="muted small">No hay registros. <a class="enlace" href="#/archivos">Cargue PDFs</a>.</p>';
+
+    function slotHTML(pos) {
+      const ins = inserciones.filter(function (x) {
+        const dp = x.despuesDePagina || 0;
+        if (pos === 0) return dp <= 0;
+        if (pos === baseIndices.length) return dp >= pos;
+        return dp === pos;
+      });
+      const cards = ins.map(function (x) {
+        const ia = mapa[x.archivoId];
+        const v = versionEfectivaMeta(ia, x);
+        return '<div class="ins-mini">' +
+          '<canvas class="mini-canvas ins-canvas" data-version="' + (v ? v.id : '') + '"></canvas>' +
+          '<div class="ins-mini-nom">' + esc(ia ? ia.nombre : '(eliminado)') + (x.paso ? '<br><span class="muted">' + esc(x.paso) + '</span>' : '') + '</div>' +
+          '<div class="ins-mini-btns"><button class="btn mini prim" data-edit-ins="' + x.id + '" title="Editar">✎</button>' +
+          '<button class="btn mini pel" data-quita-ins="' + x.id + '" title="Quitar">✕</button></div></div>';
+      }).join('');
+      const etiqueta = pos === 0 ? 'Al inicio' : (pos === baseIndices.length ? 'Al final' : '↳ tras pág. ' + pos);
+      return '<div class="slot" data-pos="' + pos + '"><div class="slot-cap">' + etiqueta + '</div>' + cards +
+        '<div class="slot-drop">+ soltar</div></div>';
+    }
+
+    let tira = slotHTML(0);
+    for (let i = 0; i < baseIndices.length; i++) {
+      tira += '<div class="pagina-card" data-pos="' + (i + 1) + '">' +
+        '<canvas class="mini-canvas base-canvas" data-version="' + vBase.id + '" data-pagina="' + (baseIndices[i] + 1) + '"></canvas>' +
+        '<div class="pagina-cap">Pág. ' + (i + 1) + '</div></div>';
+      tira += slotHTML(i + 1);
+    }
+
+    app.innerHTML =
+      '<div class="barra"><div><a href="' + volver + '" class="enlace small">‹ Volver al armador</a>' +
+      '<h2>Inserción gráfica — ' + esc(archivoBase.nombre) + '</h2>' +
+      '<div class="chips"><span class="chip">' + baseIndices.length + ' páginas</span>' +
+      '<span class="chip prim">' + inserciones.length + ' inserción(es)</span></div></div></div>' +
+      '<div class="aviso">Arrastre un registro de la izquierda y suéltelo <b>entre las páginas</b> de la fórmula maestra (sobre la página o en el hueco donde debe ir).</div>' +
+      '<div class="grafico"><aside class="paleta"><div class="paleta-tit">Registros / formularios</div>' +
+      paleta + '<a class="btn" href="#/archivos" style="margin-top:10px">+ Cargar PDF</a></aside>' +
+      '<div class="paginas-grafico" id="paginasGrafico">' + tira + '</div></div>';
+
+    pintarLazy();
+
+    let arrastrando = null;
+    app.querySelectorAll('.reg-card').forEach(function (card) {
+      card.addEventListener('dragstart', function (e) {
+        arrastrando = card.getAttribute('data-archivo');
+        try { e.dataTransfer.setData('text/plain', arrastrando); e.dataTransfer.effectAllowed = 'copy'; } catch (x) { }
+      });
+      card.addEventListener('dragend', function () { arrastrando = null; });
+    });
+    function posDe(el) {
+      const s = el.closest('.slot'); if (s) return parseInt(s.getAttribute('data-pos'), 10);
+      const pg = el.closest('.pagina-card'); if (pg) return parseInt(pg.getAttribute('data-pos'), 10);
+      return null;
+    }
+    const cont = document.getElementById('paginasGrafico');
+    cont.querySelectorAll('.slot, .pagina-card').forEach(function (z) {
+      z.addEventListener('dragover', function (e) { e.preventDefault(); z.classList.add('zona-activa'); });
+      z.addEventListener('dragleave', function () { z.classList.remove('zona-activa'); });
+      z.addEventListener('drop', function (e) {
+        e.preventDefault(); z.classList.remove('zona-activa');
+        let archivoId = arrastrando;
+        try { archivoId = e.dataTransfer.getData('text/plain') || arrastrando; } catch (x) { }
+        const pos = posDe(z);
+        if (archivoId && pos != null) {
+          insertarRegistro(plantillaId, itemId, archivoId, pos, function () { renderGrafico(plantillaId, itemId); });
+        }
+      });
+    });
+    app.querySelectorAll('[data-edit-ins]').forEach(function (b) {
+      b.onclick = function () { dialogoInsercion(plantillaId, itemId, b.getAttribute('data-edit-ins'), function () { renderGrafico(plantillaId, itemId); }); };
+    });
+    app.querySelectorAll('[data-quita-ins]').forEach(function (b) {
+      b.onclick = function () { quitarInsercion(plantillaId, itemId, b.getAttribute('data-quita-ins'), function () { renderGrafico(plantillaId, itemId); }); };
+    });
   }
 
   // ==================================================================
@@ -958,11 +1232,12 @@
       if (vista === 'archivos') await renderArchivos();
       else if (vista === 'archivo') await renderArchivoDetalle(partes[1]);
       else if (vista === 'plantilla') await renderBuilder(partes[1]);
+      else if (vista === 'grafico') await renderGrafico(partes[1], partes[2]);
       else if (vista === 'armados') await renderArmados();
       else if (vista === 'datos') await renderDatos();
       else await renderPlantillas();
     } catch (e) { mostrarError(e); }
-    actualizarNav(vista === 'plantilla' ? 'plantillas' : (vista === 'archivo' ? 'archivos' : vista));
+    actualizarNav((vista === 'plantilla' || vista === 'grafico') ? 'plantillas' : (vista === 'archivo' ? 'archivos' : vista));
     window.scrollTo(0, 0);
   }
 
