@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Generar expediente{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Generar expediente — {{ plantilla.nombre }}</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('expedientes.plantillas') }}">Expedientes</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('expedientes.builder', id=plantilla.id) }}">{{ plantilla.nombre }}</a></li>
+<li class="breadcrumb-item active">Generar</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="row g-3 justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-file-earmark-pdf"></i> Datos del lote</div>
+      <form method="post" class="card-body">
+        {{ csrf() }}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Número de lote</label>
+            <input type="text" name="numero_lote" class="form-control" placeholder="Ej. L-2026-0345" autofocus>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fecha del expediente</label>
+            <input type="date" name="fecha_expediente" class="form-control" value="{{ hoy.isoformat() }}">
+          </div>
+          <div class="col-md-7">
+            <label class="form-label">Producto</label>
+            <input type="text" name="producto" class="form-control" value="{{ plantilla.producto or '' }}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Código</label>
+            <input type="text" name="codigo" class="form-control" value="{{ plantilla.codigo or '' }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nombre del expediente (al guardar)</label>
+            <input type="text" name="nombre" class="form-control"
+                   placeholder="Si lo deja vacío: «{{ plantilla.nombre }} — Lote …»">
+          </div>
+        </div>
+
+        <hr>
+        <label class="form-label d-block">¿Qué desea hacer?</label>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="accion" id="acc1" value="guardar_descargar" checked>
+          <label class="form-check-label" for="acc1">Guardar en el sistema y descargar el PDF</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="accion" id="acc2" value="guardar">
+          <label class="form-check-label" for="acc2">Solo guardar en el sistema (queda en «Expedientes armados»)</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="accion" id="acc3" value="descargar">
+          <label class="form-check-label" for="acc3">Solo descargar (no guardar)</label>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <a href="{{ url_for('expedientes.builder', id=plantilla.id) }}" class="btn btn-outline-secondary">Volver</a>
+          <a href="{{ url_for('expedientes.plantilla_preview', id=plantilla.id) }}" target="_blank"
+             class="btn btn-outline-primary"><i class="bi bi-eye"></i> Vista previa</a>
+          <button type="submit" class="btn btn-success"><i class="bi bi-gear-wide-connected"></i> Generar expediente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-check"></i> Resumen de la plantilla</div>
+      <div class="card-body">
+        <table class="table table-sm mb-3">
+          <tr><th class="w-50">Registros</th><td>{{ plantilla.num_items }}</td></tr>
+          <tr><th>Páginas estimadas</th><td>{{ plantilla.total_paginas }}</td></tr>
+          <tr><th>Foliado</th><td>{{ 'Sí' if plantilla.foliar else 'No' }}</td></tr>
+          <tr><th>Sello</th><td>{{ plantilla.texto_sello or '—' }}</td></tr>
+        </table>
+        <ol class="small ps-3 mb-0">
+          {% for it in plantilla.items %}
+          <li>{{ it.archivo.nombre if it.archivo }}
+            <span class="text-muted">({{ it.num_paginas }} pág.{{ ' — ' + it.paso if it.paso }})</span></li>
+          {% else %}
+          <li class="text-muted list-unstyled">La plantilla aún no tiene registros.</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

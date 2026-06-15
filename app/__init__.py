@@ -21,7 +21,8 @@ def create_app(config_name=None):
     login_manager.login_message_category = 'warning'
 
     # Modelos (necesarios para create_all y migraciones)
-    from app.models import user, config_app, documento, cambio, capacitacion, capa, auditoria  # noqa: F401
+    from app.models import (user, config_app, documento, cambio, capacitacion,  # noqa: F401
+                            capa, auditoria, expediente)
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -36,6 +37,7 @@ def create_app(config_name=None):
     from app.routes.capas import capas_bp
     from app.routes.auditorias import auditorias_bp
     from app.routes.administracion import administracion_bp
+    from app.routes.expedientes import expedientes_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -45,6 +47,7 @@ def create_app(config_name=None):
     app.register_blueprint(capas_bp, url_prefix='/capas')
     app.register_blueprint(auditorias_bp, url_prefix='/auditorias')
     app.register_blueprint(administracion_bp, url_prefix='/administracion')
+    app.register_blueprint(expedientes_bp, url_prefix='/expedientes')
 
     # Filtros Jinja
     from app.utils.helpers import formato_fecha, formato_fecha_hora, badge_estado

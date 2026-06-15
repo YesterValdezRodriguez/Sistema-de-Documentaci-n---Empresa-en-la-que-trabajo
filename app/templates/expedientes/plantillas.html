@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+{% block titulo %}Expedientes — Plantillas{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Plantillas de Expedientes</h5>{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Expedientes</li>{% endblock %}
+
+{% block contenido %}
+<div class="alert alert-light border small d-flex align-items-center gap-2">
+  <i class="bi bi-info-circle text-primary fs-5"></i>
+  <span>Una <strong>plantilla</strong> es la configuración de un expediente (batch record): qué
+  registros lo componen, en qué orden y en qué paso van. Ármela una vez y reutilícela en cada
+  lote; cuando un registro se actualice, suba su nueva versión y regenere el expediente.</span>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label small mb-1">Buscar</label>
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="Nombre, producto o código…" value="{{ request.args.get('q', '') }}">
+      </div>
+      <div class="col-md-6 d-flex gap-1">
+        <button type="submit" class="btn btn-sm btn-farach"><i class="bi bi-search"></i> Buscar</button>
+        <a href="{{ url_for('expedientes.plantillas') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-collection"></i> Plantillas</span>
+    {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+    <a href="{{ url_for('expedientes.plantilla_nueva') }}" class="btn btn-sm btn-farach">
+      <i class="bi bi-plus-lg"></i> Nueva Plantilla</a>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Nombre</th><th>Producto</th><th>Código</th><th>Ver.</th>
+            <th class="text-center">Registros</th><th class="text-center">Págs.</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for p in plantillas %}
+        <tr>
+          <td class="fw-semibold">
+            <a href="{{ url_for('expedientes.builder', id=p.id) }}" class="text-decoration-none">{{ p.nombre }}</a>
+          </td>
+          <td>{{ p.producto or '—' }}</td>
+          <td>{{ p.codigo or '—' }}</td>
+          <td>{{ p.version }}</td>
+          <td class="text-center"><span class="badge text-bg-secondary">{{ p.num_items }}</span></td>
+          <td class="text-center">{{ p.total_paginas }}</td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a href="{{ url_for('expedientes.builder', id=p.id) }}"
+                 class="btn btn-outline-primary" title="Abrir / armar"><i class="bi bi-pencil-square"></i></a>
+              {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+              <a href="{{ url_for('expedientes.plantilla_generar', id=p.id) }}"
+                 class="btn btn-outline-success" title="Generar expediente"><i class="bi bi-file-earmark-pdf"></i></a>
+              <button class="btn btn-outline-danger" title="Eliminar"
+                      data-bs-toggle="modal" data-bs-target="#modalEliminar{{ p.id }}">
+                <i class="bi bi-trash"></i></button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">
+          No hay plantillas. {% if current_user.tiene_rol('admin', 'gestor_doc') %}
+          <a href="{{ url_for('expedientes.plantilla_nueva') }}">Cree la primera</a>.{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% for p in plantillas %}
+{% if current_user.tiene_rol('admin', 'gestor_doc') %}
+<div class="modal fade" id="modalEliminar{{ p.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('expedientes.plantilla_eliminar', id=p.id) }}" class="modal-content">
+      {{ csrf() }}
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Eliminar plantilla</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Eliminar la plantilla <strong>{{ p.nombre }}</strong>? Se borrará su estructura.
+        Los expedientes ya armados se conservan.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

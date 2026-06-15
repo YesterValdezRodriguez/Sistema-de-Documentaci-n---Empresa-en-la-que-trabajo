@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block titulo %}Expedientes armados{% endblock %}
+{% block encabezado %}<h5 class="mb-0">Expedientes Armados</h5>{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('expedientes.plantillas') }}">Expedientes</a></li>
+<li class="breadcrumb-item active">Armados</li>
+{% endblock %}
+
+{% block contenido %}
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-8">
+        <label class="form-label small mb-1">Buscar</label>
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="Nombre, lote, código o producto…" value="{{ request.args.get('q', '') }}">
+      </div>
+      <div class="col-md-4 d-flex gap-1">
+        <button type="submit" class="btn btn-sm btn-farach"><i class="bi bi-search"></i> Buscar</button>
+        <a href="{{ url_for('expedientes.armados') }}" class="btn btn-sm btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-archive"></i> Expedientes generados</div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm align-middle mb-0">
+      <thead>
+        <tr><th>Expediente</th><th>Producto</th><th>Lote</th><th class="text-center">Págs.</th>
+            <th>Generado</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for e in expedientes %}
+        <tr>
+          <td class="fw-semibold">
+            <a href="{{ url_for('expedientes.armado_detalle', id=e.id) }}" class="text-decoration-none">{{ e.nombre }}</a>
+            {% if e.codigo %}<br><span class="text-muted small">{{ e.codigo }}</span>{% endif %}
+          </td>
+          <td>{{ e.producto or '—' }}</td>
+          <td>{{ e.numero_lote or '—' }}</td>
+          <td class="text-center">{{ e.num_paginas }}</td>
+          <td class="small">{{ e.fecha_generacion | fecha_hora }}</td>
+          <td class="text-end">
+            <div class="btn-group btn-group-sm">
+              <a href="{{ url_for('expedientes.armado_ver', id=e.id) }}" target="_blank"
+                 class="btn btn-outline-secondary" title="Ver"><i class="bi bi-eye"></i></a>
+              <a href="{{ url_for('expedientes.armado_ver', id=e.id, descargar=1) }}"
+                 class="btn btn-outline-danger" title="Descargar"><i class="bi bi-download"></i></a>
+              <a href="{{ url_for('expedientes.armado_detalle', id=e.id) }}"
+                 class="btn btn-outline-primary" title="Detalle"><i class="bi bi-info-circle"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No hay expedientes armados todavía.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

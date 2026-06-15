@@ -14,6 +14,8 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
     WTF_CSRF_TIME_LIMIT = None
     REGISTROS_POR_PAGINA = 50
+    # Tamaño máximo de PDF que se puede subir al armar expedientes (64 MB)
+    MAX_CONTENT_LENGTH = 64 * 1024 * 1024
     EMPRESA_NOMBRE = 'Laboratorios Alfa II (FARACH, S.A.)'
     SISTEMA_NOMBRE = 'QMS FARACH'
 
