@@ -34,19 +34,6 @@
         <a class="nav-link" href="{{ url_for('documentos.copias') }}">Copias Controladas</a>
       </div>
 
-      <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('expedientes.') }}"
-         href="{{ url_for('expedientes.plantillas') }}">
-        <span class="icono"><i class="bi bi-collection"></i></span> Expedientes
-      </a>
-      <div class="submenu">
-        <a class="nav-link" href="{{ url_for('expedientes.plantillas') }}">Plantillas</a>
-        <a class="nav-link" href="{{ url_for('expedientes.armados') }}">Expedientes Armados</a>
-        <a class="nav-link" href="{{ url_for('expedientes.archivos') }}">Registros / PDFs</a>
-        {% if current_user.tiene_rol('admin', 'gestor_doc') %}
-        <a class="nav-link" href="{{ url_for('expedientes.plantilla_nueva') }}">Nueva Plantilla</a>
-        {% endif %}
-      </div>
-
       <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('cambios.') }}"
          href="{{ url_for('cambios.lista') }}">
         <span class="icono"><i class="bi bi-arrow-repeat"></i></span> Control de Cambios
