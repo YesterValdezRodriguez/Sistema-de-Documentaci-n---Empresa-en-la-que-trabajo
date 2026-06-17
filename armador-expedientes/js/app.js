@@ -97,6 +97,12 @@
   }
   function confirmar(msg) { return window.confirm(msg); }
 
+  // Bloque de "estado vacío" amigable (icono + título + texto de ayuda)
+  function vacio(icono, titulo, sub) {
+    return '<div class="vacio"><div class="vacio-ic">' + icono + '</div>' +
+      '<h3>' + esc(titulo) + '</h3>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>';
+  }
+
   function modal(titulo, cuerpoHTML, botones, opciones) {
     opciones = opciones || {};
     const dlg = document.createElement('dialog');
@@ -217,7 +223,7 @@
           '<button class="btn mini pel" data-del="' + p.id + '" title="Eliminar">' + Icons.trash + '</button>' +
         '</td></tr>';
     }).join('');
-    if (!plantillas.length) filas = '<tr><td colspan="6" class="centro muted pad">No hay plantillas todavía. Cree la primera.</td></tr>';
+    if (!plantillas.length) filas = '<tr><td colspan="6">' + vacio(Icons.layout, 'Aún no hay plantillas', 'Cree su primera plantilla con el botón «Nueva plantilla» y empiece a armar expedientes.') + '</td></tr>';
 
     app.innerHTML =
       '<div class="aviso"><b>Plantilla</b> = la configuración de un expediente (batch record): qué registros lo ' +
@@ -324,7 +330,7 @@
             '<button class="btn mini pel" data-quita="' + it.id + '" title="Quitar">' + Icons.x + '</button>' +
           '</div>' +
         '</div>' + insBloque + '</div>';
-    }).join('') || '<p class="centro muted pad">Aún no hay registros. Agregue el primero abajo.</p>';
+    }).join('') || vacio(Icons.layout, 'Empiece a armar el expediente', 'Agregue el primer registro desde el panel de abajo y arrástrelos para ordenarlos.');
 
     const opcArchivos = lista.map(function (a) {
       return '<option value="' + a.id + '">' + esc((a.codigo ? a.codigo + ' — ' : '') + a.nombre) +
@@ -629,7 +635,7 @@
       '<label class="c6">Páginas<input id="ed_rango" value="' + esc(it.rangoPaginas || '') + '" placeholder="todas"></label>' +
       '<label class="c6">Paso / etapa<input id="ed_paso" value="' + esc(it.paso || '') + '"></label>' +
       '<label class="c12 check"><input type="checkbox" id="ed_sellar"' + (it.sellarPaso ? ' checked' : '') + '> Sellar el nombre del paso en estas hojas</label>' +
-      '<div class="c12"><hr style="border:0; border-top:1px solid #e2e8f0; margin: 4px 0"></div>' +
+      '<div class="c12"><hr></div>' +
       '<label class="c12 check"><input type="checkbox" id="ed_actual"' + (it.usarVersionActual ? ' checked' : '') + '> Usar siempre la versión actual (recomendado)</label>' +
       '<label class="c12">…o fijar una versión concreta<select id="ed_vfija"' + (it.usarVersionActual ? ' disabled' : '') + '><option value="">— Seleccionar —</option>' + opcVers + '</select></label>' +
       '</div>';
@@ -934,7 +940,7 @@
           '<button class="btn mini" data-ver="' + a.id + '" title="Ver PDF actual">' + Icons.eye + '</button> ' +
           '<a class="btn mini prim" href="#/archivo/' + a.id + '" title="Versiones">' + Icons.layout + '</a></td></tr>';
     }).join('');
-    if (!arr.length) filas = '<tr><td colspan="6" class="centro muted pad">No hay archivos. Cargue el primero.</td></tr>';
+    if (!arr.length) filas = '<tr><td colspan="6">' + vacio(Icons.upload, 'No hay registros cargados', 'Cargue su primer PDF con el botón «Cargar PDF»: fórmulas maestras, registros o anexos.') + '</td></tr>';
 
     app.innerHTML =
       '<div class="aviso">PDF reutilizables (fórmulas maestras, registros, anexos…) con <b>historial de versiones</b>. ' +
@@ -1115,7 +1121,7 @@
           (e.plantillaId ? '<button class="btn mini prim" data-regen="' + e.id + '" title="Regenerar con versiones vigentes">' + Icons.refresh + '</button> ' : '') +
           '<button class="btn mini" data-del="' + e.id + '" title="Eliminar">' + Icons.trash + '</button></td></tr>';
     }).join('');
-    if (!arr.length) filas = '<tr><td colspan="6" class="centro muted pad">No hay expedientes armados todavía.</td></tr>';
+    if (!arr.length) filas = '<tr><td colspan="6">' + vacio(Icons.play, 'Todavía no hay expedientes armados', 'Genere uno desde una plantilla y aparecerá aquí, listo para ver, descargar o regenerar.') + '</td></tr>';
 
     app.innerHTML =
       '<div class="barra"><h2>Expedientes armados</h2></div>' +
